@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   AuditQueryError,
   AuditValidationError,
+  contextFromRequest,
   createAuditHandler,
   createAuditLog,
   describeAction,
@@ -166,5 +167,30 @@ describe("createAuditHandler", () => {
       new Request("https://x.test/audit?cursor=zz", { headers: { "x-user": "admin" } }),
     );
     expect(bad.status).toBe(400);
+  });
+});
+
+describe("contextFromRequest", () => {
+  it("reads proxy headers", () => {
+    const request = new Request("https://app.example/api", {
+      headers: {
+        "x-forwarded-for": "203.0.113.7, 10.0.0.1",
+        "user-agent": "Mozilla/5.0",
+        "x-vercel-id": "fra1::abc",
+        "x-vercel-ip-city": "Z%C3%BCrich",
+        "x-vercel-ip-country": "CH",
+      },
+    });
+    expect(contextFromRequest(request)).toEqual({
+      ip: "203.0.113.7",
+      userAgent: "Mozilla/5.0",
+      requestId: "fra1::abc",
+      location: "Zürich, CH",
+    });
+  });
+
+  it("ignores the IP without a trusted proxy and skips empty values", () => {
+    const headers = new Headers({ "x-forwarded-for": "1.2.3.4", "cf-ipcountry": "XX" });
+    expect(contextFromRequest(headers, { trustProxy: false })).toEqual({});
   });
 });

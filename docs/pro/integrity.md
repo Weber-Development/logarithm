@@ -21,11 +21,27 @@ const report = await verifyIntegrity(store, { key: process.env.AUDIT_KEY!, tenan
 // { ok: true, checked: 18234, erased: 3, oldestSeq: 1, head: "9f2c…", issues: [] }
 ```
 
-Each issue names the event, its position and the reason: `hash-mismatch` (changed), `broken-link` (removed, inserted or reordered), `actor-mismatch` (actor changed without an erasure) or `missing-link`. Run it nightly and alert on `ok: false`.
+Each issue names the event, its position and the reason: `hash-mismatch` (changed), `broken-link` (removed, inserted or reordered), `actor-mismatch` (actor changed without an erasure) or `missing-link`. With checkpoints (below) also `truncated`, `checkpoint-mismatch` and `checkpoint-invalid`. Run it nightly and alert on `ok: false`.
 
 ## The key
 
-Use at least 32 random bytes (`openssl rand -base64 48`) and keep the key outside the database, e.g. in your secret manager. Someone with both the key and write access could rebuild the chain. To also detect a rewritten tail, store `report.head` somewhere else each day, e.g. in a separate bucket, and compare.
+Use at least 32 random bytes (`openssl rand -base64 48`) and keep the key outside the database, e.g. in your secret manager. Someone with both the key and write access could rebuild the chain.
+
+## Checkpoints
+
+The chain alone cannot tell whether someone deleted the newest events, or rebuilt the whole chain with the key. A checkpoint is a signed snapshot of the chain head that you keep outside the database. Take one daily and send it somewhere the database cannot reach:
+
+```ts
+import { createCheckpoint, verifyIntegrity } from "@weber-development/logarithm-integrity"
+
+const checkpoint = await createCheckpoint(store, { key, tenantId: "acme" })
+await bucket.put(`audit-checkpoints/acme/${checkpoint.createdAt}.json`, JSON.stringify(checkpoint))
+
+// later
+const report = await verifyIntegrity(store, { key, tenantId: "acme", checkpoints: await loadCheckpoints("acme") })
+```
+
+`truncated` means the chain now ends before a checkpoint, so the newest events were removed. `checkpoint-mismatch` means the event at a checkpoint has a different hash, so the chain was rebuilt. `checkpoint-invalid` means the checkpoint's signature does not match the key. Checkpoints older than the oldest remaining event (deleted by retention) are skipped. `report.checkpoints` counts the ones that matched.
 
 ## Works with retention and erasure
 

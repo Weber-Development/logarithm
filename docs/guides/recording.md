@@ -50,10 +50,12 @@ You can also pass `changes` yourself instead of `before` and `after`.
 const log = audit.with({
   tenantId: session.orgId,
   actor: { id: session.userId, name: session.name },
-  context: { ip, userAgent: request.headers.get("user-agent") ?? undefined },
+  context: contextFromRequest(request),
 })
 await log.record({ action: "project.archived", targets: [{ type: "project", id }] })
 ```
+
+`contextFromRequest(request)` reads the client IP, browser, request id and, on Vercel or Cloudflare, the city and country from the usual proxy headers. It also accepts a `Headers` object, e.g. `await headers()` in a Next.js server action. The IP comes from `x-forwarded-for` and similar headers, which clients can forge unless a proxy sets them. Without such a proxy, pass `{ trustProxy: false }`.
 
 ## What to log
 

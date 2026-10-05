@@ -1,3 +1,4 @@
+export { ActivityFeed, type ActivityFeedProps, relativeTime } from "./ActivityFeed";
 export { AuditLog, type AuditLogProps } from "./AuditLog";
 export { type AuditLogLabels, de, en, labelsFor } from "./labels";
 export {

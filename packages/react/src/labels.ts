@@ -28,6 +28,10 @@ export interface AuditLogLabels {
   today: string;
   yesterday: string;
   filters: string;
+  recentActivity: string;
+  viewAll: string;
+  noActivity: string;
+  justNow: string;
   results: (count: number, more: boolean) => string;
   changeCount: (count: number) => string;
 }
@@ -62,6 +66,10 @@ export const en: AuditLogLabels = {
   today: "Today",
   yesterday: "Yesterday",
   filters: "Filter activity",
+  recentActivity: "Recent activity",
+  viewAll: "View all activity",
+  noActivity: "No activity yet.",
+  justNow: "just now",
   results: (count, more) => `${count}${more ? "+" : ""} ${count === 1 ? "entry" : "entries"}`,
   changeCount: (count) => `${count} ${count === 1 ? "change" : "changes"}`,
 };
@@ -96,6 +104,10 @@ export const de: AuditLogLabels = {
   today: "Heute",
   yesterday: "Gestern",
   filters: "Aktivität filtern",
+  recentActivity: "Letzte Aktivität",
+  viewAll: "Alle Aktivitäten anzeigen",
+  noActivity: "Noch keine Aktivität.",
+  justNow: "gerade eben",
   results: (count, more) => `${count}${more ? "+" : ""} ${count === 1 ? "Eintrag" : "Einträge"}`,
   changeCount: (count) => `${count} ${count === 1 ? "Änderung" : "Änderungen"}`,
 };
