@@ -32,6 +32,19 @@ The person's id, name and email are replaced in every event they performed. The 
 
 With [tamper evidence](integrity.md), erased events still verify.
 
+## Legal holds
+
+During litigation, an authority's request or an internal investigation, data must be kept even if its period has passed. Pass the holds to both functions:
+
+```ts
+const holds = { tenants: ["bank-ag"], actors: ["user_123"] }
+
+await applyRetention(store, tenantIds, { keep: "13m", holds })
+await eraseActor(store, "user_123", { key, holds }) // throws LegalHoldError
+```
+
+A tenant on hold is skipped completely (`held: "tenant"` in the result). For a person on hold, the cutoff moves back to their oldest event in the tenant, as actor or target, so nothing about them is deleted (`held: "actor"`). Stores delete by time, so other events from that day on are kept too until the hold is lifted.
+
 ## Access requests
 
 ```ts
