@@ -1,6 +1,6 @@
 {
   "name": "@sweberdev/logarithm",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Self-hosted audit log for SaaS apps: who changed what and when. Diffs with redaction, tenant-scoped queries, Postgres and SQLite stores, and a Fetch API handler for the React viewer.",
   "license": "MIT",
   "author": "Seya Weber (https://github.com/sxwxbxr)",
