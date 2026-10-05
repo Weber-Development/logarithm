@@ -1,0 +1,32 @@
+{
+  "sections": [
+    {
+      "label": "Start",
+      "items": ["introduction", "getting-started"]
+    },
+    {
+      "label": "Guides",
+      "items": [
+        "guides/recording",
+        "guides/postgres",
+        "guides/sqlite",
+        "guides/nextjs",
+        "guides/react",
+        "guides/multi-tenant",
+        "guides/privacy"
+      ]
+    },
+    {
+      "label": "Reference",
+      "items": ["reference/api", "reference/http", "reference/custom-store"]
+    },
+    {
+      "label": "Logarithm Pro",
+      "items": ["pro/overview", "pro/integrity", "pro/retention", "pro/export"]
+    },
+    {
+      "label": "Legal",
+      "items": ["legal"]
+    }
+  ]
+}

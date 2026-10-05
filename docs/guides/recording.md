@@ -1,0 +1,62 @@
+---
+title: Recording events
+description: Actions, actors, targets, diffs and what to log.
+---
+
+An event answers four questions: **who** (actor) did **what** (action) to **which object** (targets) and **what changed** (changes).
+
+```ts
+await audit.record({
+  action: "member.role_changed",
+  actor: { id: user.id, name: user.name, email: user.email },
+  targets: [{ type: "member", id: member.id, name: member.email }],
+  before: { role: "viewer" },
+  after: { role: "admin" },
+  context: { ip: request.headers.get("x-forwarded-for") ?? undefined },
+  metadata: { reason: "Requested by support ticket 4711" },
+})
+```
+
+## Actions
+
+Name actions `resource.verb` in the past tense: `project.created`, `invoice.paid`, `api_key.rotated`, `user.signed_in`. Letters, digits, `_` and `-`, separated by dots. Filters accept a prefix such as `project.*`.
+
+## Actors
+
+`actor.id` is required. `type` defaults to `user`; use `api_key`, `system` or `job` for everything else, so the viewer can tell people and automation apart.
+
+## Changes
+
+Pass `before` and `after` and Logarithm computes the diff:
+
+- Nested objects become dot paths such as `billing.plan`.
+- Arrays are compared as a whole.
+- Dates are stored as ISO strings.
+- Fields named `password`, `token`, `secret`, `apiKey`, `iban`, `cardNumber` and similar are stored as `[redacted]`, also inside nested objects and in `metadata`. Change the list with the `redact` option.
+
+Skip noisy fields with `ignore`:
+
+```ts
+createAuditLog({ store, ignore: ["updatedAt", "version"], redact: [...DEFAULT_REDACT, "taxId"] })
+```
+
+You can also pass `changes` yourself instead of `before` and `after`.
+
+## Defaults per request
+
+`audit.with()` returns a log that fills in tenant, actor and context for every event. Create it once per request, e.g. in middleware:
+
+```ts
+const log = audit.with({
+  tenantId: session.orgId,
+  actor: { id: session.userId, name: session.name },
+  context: { ip, userAgent: request.headers.get("user-agent") ?? undefined },
+})
+await log.record({ action: "project.archived", targets: [{ type: "project", id }] })
+```
+
+## What to log
+
+Log what a customer's admin or an auditor would ask about: sign-ins and failed sign-ins, membership and role changes, permission and security settings, API keys, billing changes, exports and deletions. Do not log every page view; the audit log is not your analytics.
+
+Record the event in the same code path as the change. With Postgres you can pass a transaction client to `postgresStore` so the event is only stored if the change commits.
