@@ -113,6 +113,13 @@ describe("describeAction", () => {
       "hat sich angemeldet",
     );
     expect(describeAction({ action: "api_key.rotated", targets: [] })).toBe("rotated api key");
+    expect(describeAction({ action: "user.signed_in", targets: [] })).toBe("signed in");
+    expect(
+      describeAction(
+        { action: "member.role_changed", targets: [{ type: "member", id: "m", name: "x@y.ch" }] },
+        { locale: "de" },
+      ),
+    ).toBe("hat die Rolle von member „x@y.ch“ geändert");
   });
 });
 

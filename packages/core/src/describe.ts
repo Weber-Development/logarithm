@@ -13,9 +13,18 @@ const DE_VERBS: Record<string, string> = {
   disabled: "hat {target} deaktiviert",
   exported: "hat {target} exportiert",
   viewed: "hat {target} angesehen",
+  rotated: "hat {target} erneuert",
+  role_changed: "hat die Rolle von {target} geändert",
   signed_in: "hat sich angemeldet",
   signed_out: "hat sich abgemeldet",
   failed: "{target}: fehlgeschlagen",
+};
+
+const EN_VERBS: Record<string, string> = {
+  role_changed: "changed the role of {target}",
+  signed_in: "signed in",
+  signed_out: "signed out",
+  sign_in_failed: "failed to sign in",
 };
 
 function words(text: string): string {
@@ -44,5 +53,7 @@ export function describeAction(
     if (template) return template.replace("{target}", object).replace(/\s+/g, " ").trim();
     return `${object}: ${words(verb)}`.trim();
   }
+  const template = EN_VERBS[verb];
+  if (template) return template.replace("{target}", object).replace(/\s+/g, " ").trim();
   return `${words(verb)} ${object}`.trim();
 }
