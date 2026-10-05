@@ -57,6 +57,16 @@ Dark mode follows `prefers-color-scheme`; force a scheme with `theme="light"` or
 
 Filters have visible labels, the details button announces its state with `aria-expanded`, the result count is a polite live region, the changes table has a caption and header cells, and focus is always visible.
 
+## Activity feed
+
+`<ActivityFeed>` is a compact list of the latest events for a dashboard or a side panel. It uses the same endpoint and stylesheet as `<AuditLog>`, shows relative times ("5 minutes ago", in German "vor 5 Minuten") and links to the full log.
+
+```tsx
+<ActivityFeed endpoint="/api/audit" limit={5} href="/settings/activity" locale="de-CH" />
+```
+
+Pass `scope={{ targetId: project.id }}` to show the activity of one object, e.g. on a project page, and `title={null}` to hide the heading. The other props match `<AuditLog>`: `fetchPage`, `init`, `labels`, `nouns`, `describe`, `refreshKey`, `theme` and `className`.
+
 ## Your own layout
 
 `useAuditLog({ endpoint, query })` returns `events`, `loading`, `error`, `hasMore`, `loadMore()` and `reload()`. `describeAction(event, { locale })` from the core package builds the sentence.

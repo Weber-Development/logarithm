@@ -58,6 +58,7 @@ interface AuditEvent {
 
 | Function | Meaning |
 |---|---|
+| `contextFromRequest(request, { trustProxy })` | IP, browser, request id and location from a `Request` or `Headers` |
 | `diff(before, after, options?)` | Field changes with redaction |
 | `describeAction(event, { locale, nouns })` | Short sentence such as `updated project "Website"` |
 | `memoryStore()` | In-memory store for tests and demos |

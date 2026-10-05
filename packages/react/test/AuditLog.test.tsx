@@ -1,7 +1,7 @@
 import { createAuditLog, memoryStore } from "@sweberdev/logarithm";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { AuditLog, toSearchParams } from "../src/index";
+import { ActivityFeed, AuditLog, relativeTime, toSearchParams } from "../src/index";
 
 afterEach(cleanup);
 
@@ -118,5 +118,25 @@ describe("toSearchParams", () => {
         from: "2026-01-01T00:00:00Z",
       }).toString(),
     ).toBe("actor=u&action=a.*%2Cb.c&target=t&from=2026-01-01T00%3A00%3A00.000Z");
+  });
+});
+
+describe("<ActivityFeed>", () => {
+  it("shows the latest entries with a link to the full log", async () => {
+    const audit = await seed();
+    const fetchPage = vi.fn((q) => audit.query(q));
+    render(<ActivityFeed fetchPage={fetchPage} limit={2} href="/audit" locale="de" />);
+    await screen.findByText("Letzte Aktivität");
+    await waitFor(() => expect(screen.getAllByRole("listitem")).toHaveLength(2));
+    expect(fetchPage.mock.calls[0]?.[0]).toMatchObject({ limit: 2 });
+    const link = screen.getByRole("link", { name: "Alle Aktivitäten anzeigen" });
+    expect(link.getAttribute("href")).toBe("/audit");
+  });
+
+  it("formats relative times", () => {
+    const now = Date.parse("2026-10-05T12:00:00.000Z");
+    expect(relativeTime("2026-10-05T11:59:30.000Z", now, "en", "just now")).toBe("just now");
+    expect(relativeTime("2026-10-05T11:55:00.000Z", now, "en", "just now")).toBe("5 minutes ago");
+    expect(relativeTime("2026-10-04T12:00:00.000Z", now, "de", "gerade eben")).toBe("gestern");
   });
 });

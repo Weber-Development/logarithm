@@ -1,3 +1,4 @@
+export { type ContextOptions, contextFromRequest } from "./context";
 export { describeAction } from "./describe";
 export { DEFAULT_REDACT, type DiffOptions, diff, REDACTED, redactChanges } from "./diff";
 export {
