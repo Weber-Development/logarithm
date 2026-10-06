@@ -7,6 +7,7 @@ import { type AuditLog, type AuditStore, createAuditLog, memoryStore } from "../
 import { migrateMysql, mysqlStore } from "../src/mysql";
 import { migratePostgres, postgresStore } from "../src/postgres";
 import { migrateSqlite, sqliteStore } from "../src/sqlite";
+import { runStoreConformance } from "../src/testing";
 
 const pg = new PGlite();
 afterAll(() => pg.close());
@@ -237,5 +238,22 @@ describe.each(Object.keys(factories))("%s store", (kind) => {
     expect((await audit.query({ search: "anna" })).events).toHaveLength(0);
     expect((await audit.query({ actorId: "erased-1" })).events).toHaveLength(3);
     expect((await audit.query({ search: "deleted user" })).events).toHaveLength(3);
+  });
+});
+
+describe.each(Object.keys(factories))("%s store passes the conformance suite", (kind) => {
+  it("has no failing checks", async () => {
+    expect(await runStoreConformance(factories[kind] as () => Promise<AuditStore>)).toEqual([]);
+  });
+});
+
+describe("conformance suite", () => {
+  it("catches a store that ignores tenants", async () => {
+    const broken = (): AuditStore => {
+      const inner = memoryStore();
+      return { ...inner, query: (q) => inner.query({ ...q, tenantId: undefined }) };
+    };
+    const failures = await runStoreConformance(broken);
+    expect(failures.map((f) => f.name)).toContain("isolates tenants");
   });
 });
