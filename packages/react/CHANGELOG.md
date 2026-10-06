@@ -1,5 +1,12 @@
 # @sweberdev/logarithm-react
 
+## 0.5.1
+
+### Patch Changes
+
+- Updated dependencies [33e9ff4]
+  - @sweberdev/logarithm@0.5.1
+
 ## 0.5.0
 
 ### Minor Changes
