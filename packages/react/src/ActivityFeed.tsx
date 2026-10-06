@@ -15,7 +15,7 @@ export interface ActivityFeedProps {
   scope?: Omit<AuditQuery, "cursor" | "limit">;
   /** Number of entries. Default 5. */
   limit?: number;
-  /** BCP 47 locale for times and built-in labels (`en` and `de` included). Default `en`. */
+  /** BCP 47 locale for times and built-in labels (`en`, `de`, `fr` and `it` included). Default `en`. */
   locale?: string;
   /** Override single labels. */
   labels?: Partial<AuditLogLabels>;

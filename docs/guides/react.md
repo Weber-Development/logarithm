@@ -29,7 +29,7 @@ The view shows entries grouped by day, with a sentence such as "Anna Muster hat 
 | `fetchPage` | – | Load a page yourself instead, e.g. a server action |
 | `scope` | – | Fixed filters, e.g. `{ targetId: project.id }` for a project's history tab |
 | `pageSize` | `25` | Entries per page |
-| `locale` | `en` | Dates and built-in labels; `de` labels are included |
+| `locale` | `en` | Dates and built-in labels; English, German, French and Italian are included |
 | `labels` | – | Override single labels |
 | `nouns` | – | Display names for resource types |
 | `actions` | – | Choices for the action filter; hidden when empty |
@@ -56,6 +56,17 @@ Dark mode follows `prefers-color-scheme`; force a scheme with `theme="light"` or
 ## Accessibility
 
 Filters have visible labels, the details button announces its state with `aria-expanded`, the result count is a polite live region, the changes table has a caption and header cells, and focus is always visible.
+
+## Languages
+
+English, German, French and Italian labels and sentences are built in and chosen by `locale`, e.g. `de-CH`, `fr-CH` or `it-CH`. Pass resource names with `nouns`. In French and Italian, include the article, because it depends on the noun:
+
+```tsx
+<AuditLog endpoint="/api/audit" locale="fr-CH" nouns={{ project: "le projet", member: "le membre" }} />
+// Anna Muster a modifié le projet « Website »
+```
+
+For other languages, pass your own `labels` and a `describe` function.
 
 ## Activity feed
 

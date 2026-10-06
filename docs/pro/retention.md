@@ -19,6 +19,36 @@ await applyRetention(store, tenantIds, {
 
 Durations: `36h`, `90d`, `12w`, `13m` (30 days each), `7y` (365 days each). With `archive`, events are handed over oldest first in batches of 1000 before they are deleted. `dryRun: true` only counts. Run it daily.
 
+## Archive to S3 or Cloudflare R2
+
+`s3Archive()` gives you a ready `archive` function. Each batch becomes one gzipped NDJSON object, `audit/<tenant>/<first event time>_<last event id>.ndjson.gz`. It signs with Web Crypto, so it runs in Node, Bun, Deno and edge runtimes without the AWS SDK.
+
+```ts
+import { applyRetention, s3Archive } from "@weber-development/logarithm-retention"
+
+const archive = s3Archive({
+  bucket: "audit-archive",
+  endpoint: `https://${process.env.R2_ACCOUNT}.r2.cloudflarestorage.com`, // R2 (region "auto")
+  accessKeyId: process.env.R2_KEY!,
+  secretAccessKey: process.env.R2_SECRET!,
+})
+
+await applyRetention(store, tenantIds, { keep: "13m", archive })
+```
+
+For AWS, pass `region: "eu-central-2"` instead of `endpoint`. For Exoscale, Infomaniak, MinIO or other S3-compatible stores, pass their `endpoint` and `region`. Options: `prefix` (default `audit/`), `gzip` (default `true`). A failed upload throws, so nothing is deleted without its archive.
+
+## Recording what retention did
+
+Pass your audit log as `recordTo`, and the log documents its own maintenance:
+
+```ts
+await applyRetention(store, tenantIds, { keep: "13m", archive, recordTo: audit })
+await eraseActor(store, "user_123", { key: process.env.AUDIT_KEY!, recordTo: audit })
+```
+
+`applyRetention` records `audit_log.retention_applied` per tenant where events were deleted, with `keep`, `cutoff`, `archived` and `deleted` in `metadata`. `eraseActor` records `audit_log.actor_erased` with the pseudonym and counts, never the original id. Both use the actor `system:retention`. Dry runs record nothing.
+
 ## Erasure requests
 
 ```ts

@@ -112,6 +112,87 @@ export const de: AuditLogLabels = {
   changeCount: (count) => `${count} ${count === 1 ? "Änderung" : "Änderungen"}`,
 };
 
+export const fr: AuditLogLabels = {
+  search: "Recherche",
+  searchPlaceholder: "Personne, action ou objet",
+  action: "Action",
+  allActions: "Toutes les actions",
+  from: "Du",
+  to: "Au",
+  reset: "Réinitialiser",
+  loading: "Chargement de l’activité…",
+  loadMore: "Afficher les entrées plus anciennes",
+  empty: "Aucune activité pour ces filtres.",
+  error: "Le journal d’activité n’a pas pu être chargé.",
+  retry: "Réessayer",
+  details: "Détails",
+  hideDetails: "Masquer les détails",
+  changes: "Modifications",
+  field: "Champ",
+  before: "Avant",
+  after: "Après",
+  context: "Requête",
+  metadata: "Données supplémentaires",
+  ip: "Adresse IP",
+  userAgent: "Navigateur",
+  requestId: "ID de requête",
+  location: "Lieu",
+  eventId: "ID d’événement",
+  tenant: "Organisation",
+  today: "Aujourd’hui",
+  yesterday: "Hier",
+  filters: "Filtrer l’activité",
+  recentActivity: "Activité récente",
+  viewAll: "Voir toute l’activité",
+  noActivity: "Aucune activité pour l’instant.",
+  justNow: "à l’instant",
+  results: (count, more) => `${count}${more ? "+" : ""} ${count === 1 ? "entrée" : "entrées"}`,
+  changeCount: (count) => `${count} ${count === 1 ? "modification" : "modifications"}`,
+};
+
+export const it: AuditLogLabels = {
+  search: "Cerca",
+  searchPlaceholder: "Persona, azione od oggetto",
+  action: "Azione",
+  allActions: "Tutte le azioni",
+  from: "Dal",
+  to: "Al",
+  reset: "Reimposta",
+  loading: "Caricamento attività…",
+  loadMore: "Mostra voci precedenti",
+  empty: "Nessuna attività per questi filtri.",
+  error: "Impossibile caricare il registro attività.",
+  retry: "Riprova",
+  details: "Dettagli",
+  hideDetails: "Nascondi dettagli",
+  changes: "Modifiche",
+  field: "Campo",
+  before: "Prima",
+  after: "Dopo",
+  context: "Richiesta",
+  metadata: "Dati aggiuntivi",
+  ip: "Indirizzo IP",
+  userAgent: "Browser",
+  requestId: "ID richiesta",
+  location: "Luogo",
+  eventId: "ID evento",
+  tenant: "Organizzazione",
+  today: "Oggi",
+  yesterday: "Ieri",
+  filters: "Filtra attività",
+  recentActivity: "Attività recente",
+  viewAll: "Vedi tutta l’attività",
+  noActivity: "Ancora nessuna attività.",
+  justNow: "proprio ora",
+  results: (count, more) => `${count}${more ? "+" : ""} ${count === 1 ? "voce" : "voci"}`,
+  changeCount: (count) => `${count} ${count === 1 ? "modifica" : "modifiche"}`,
+};
+
+/** Built-in labels for a BCP 47 locale: German, French and Italian, English otherwise. */
 export function labelsFor(locale: string | undefined): AuditLogLabels {
-  return locale?.toLowerCase().startsWith("de") ? de : en;
+  const code = locale?.toLowerCase().slice(0, 2);
+  if (code === "de") return de;
+  if (code === "fr") return fr;
+  if (code === "it") return it;
+  return en;
 }

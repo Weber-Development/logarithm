@@ -133,6 +133,15 @@ describe("<ActivityFeed>", () => {
     expect(link.getAttribute("href")).toBe("/audit");
   });
 
+  it("has French and Italian labels", async () => {
+    const audit = await seed();
+    render(<ActivityFeed fetchPage={(q) => audit.query(q)} locale="fr-CH" />);
+    await screen.findByText("Activité récente");
+    cleanup();
+    render(<ActivityFeed fetchPage={(q) => audit.query(q)} locale="it-CH" />);
+    await screen.findByText("Attività recente");
+  });
+
   it("formats relative times", () => {
     const now = Date.parse("2026-10-05T12:00:00.000Z");
     expect(relativeTime("2026-10-05T11:59:30.000Z", now, "en", "just now")).toBe("just now");
