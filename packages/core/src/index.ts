@@ -9,9 +9,15 @@ export {
 } from "./http";
 export { ulid } from "./id";
 export {
+  type ActionName,
+  type ActionPattern,
+  type AnyActions,
+  type AuditCountQueryOf,
   type AuditDefaults,
+  type AuditEventOf,
   type AuditLog,
   type AuditLogOptions,
+  type AuditQueryOf,
   type AuditRecordInput,
   AuditValidationError,
   createAuditLog,
@@ -20,23 +26,30 @@ export { memoryStore } from "./memory";
 export {
   AuditQueryError,
   compareEvents,
+  countEvents,
   DEFAULT_LIMIT,
   decodeCursor,
   encodeCursor,
   MAX_LIMIT,
   matches,
   searchText,
+  sortGroups,
+  toStoreFilter,
   toStoreQuery,
 } from "./query";
 export type {
   AuditActor,
   AuditChange,
   AuditContext,
+  AuditCountQuery,
   AuditEvent,
   AuditEventInput,
+  AuditGroupBy,
+  AuditGroupCount,
   AuditPage,
   AuditQuery,
   AuditStore,
   AuditTarget,
+  StoreFilter,
   StoreQuery,
 } from "./types";

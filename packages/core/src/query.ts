@@ -1,4 +1,12 @@
-import type { AuditEvent, AuditQuery, StoreQuery } from "./types";
+import type {
+  AuditCountQuery,
+  AuditEvent,
+  AuditGroupBy,
+  AuditGroupCount,
+  AuditQuery,
+  StoreFilter,
+  StoreQuery,
+} from "./types";
 
 export const DEFAULT_LIMIT = 50;
 export const MAX_LIMIT = 500;
@@ -111,4 +119,55 @@ export function compareEvents(a: AuditEvent, b: AuditEvent): number {
   if (a.occurredAt !== b.occurredAt) return a.occurredAt < b.occurredAt ? 1 : -1;
   if (a.id === b.id) return 0;
   return a.id < b.id ? 1 : -1;
+}
+
+export const GROUP_BY: readonly AuditGroupBy[] = ["day", "action", "actor"];
+
+/** Validates the filters of a `count()` query. Paging fields are not allowed. */
+export function toStoreFilter(query: AuditCountQuery = {}): StoreFilter {
+  const {
+    limit: _limit,
+    before: _before,
+    ...filter
+  } = toStoreQuery({
+    ...query,
+    limit: undefined,
+    cursor: undefined,
+  });
+  return filter;
+}
+
+/** The group an event falls into. Days are UTC. */
+export function groupKey(event: AuditEvent, groupBy: AuditGroupBy): string {
+  if (groupBy === "day") return event.occurredAt.slice(0, 10);
+  if (groupBy === "action") return event.action;
+  return event.actor.id;
+}
+
+/**
+ * Orders grouped counts the way `count()` returns them: days oldest first, actions and actors by
+ * count descending, then by key.
+ */
+export function sortGroups(groups: AuditGroupCount[], groupBy: AuditGroupBy): AuditGroupCount[] {
+  return [...groups].sort((a, b) => {
+    if (groupBy !== "day" && a.count !== b.count) return b.count - a.count;
+    return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
+  });
+}
+
+/** Reference implementation of `count`, used by the memory store and as fallback. */
+export function countEvents(
+  events: Iterable<AuditEvent>,
+  filter: StoreFilter,
+  groupBy?: AuditGroupBy,
+): AuditGroupCount[] {
+  const counts = new Map<string, number>();
+  const q: StoreQuery = { ...filter, limit: Number.POSITIVE_INFINITY };
+  for (const event of events) {
+    if (!matches(event, q)) continue;
+    const key = groupBy ? groupKey(event, groupBy) : "";
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  if (!groupBy) return [{ key: "", count: counts.get("") ?? 0 }];
+  return Array.from(counts, ([key, count]) => ({ key, count }));
 }

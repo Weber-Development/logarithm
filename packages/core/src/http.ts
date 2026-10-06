@@ -1,4 +1,4 @@
-import type { AuditLog } from "./log";
+import type { AnyActions, AuditLog, AuditQueryOf } from "./log";
 import { AuditQueryError, MAX_LIMIT } from "./query";
 import type { AuditQuery } from "./types";
 
@@ -7,8 +7,8 @@ export interface AuditAccess {
   tenantId: string | null;
 }
 
-export interface AuditHandlerOptions {
-  log: AuditLog;
+export interface AuditHandlerOptions<A extends Record<keyof A, object> = AnyActions> {
+  log: AuditLog<A>;
   /**
    * Decides who may read the log. Return the tenant the caller may see, or `null` to answer 403.
    * This is the only access check, so look up the session here.
@@ -54,8 +54,8 @@ export function parseQueryParams(params: URLSearchParams): AuditQuery {
  * `GET ?actor=&action=&target=&targetType=&from=&to=&q=&cursor=&limit=` returns a page,
  * `GET ?id=` one event.
  */
-export function createAuditHandler(
-  options: AuditHandlerOptions,
+export function createAuditHandler<A extends Record<keyof A, object> = AnyActions>(
+  options: AuditHandlerOptions<A>,
 ): (request: Request) => Promise<Response> {
   return async (request) => {
     if (request.method !== "GET") {
@@ -71,7 +71,8 @@ export function createAuditHandler(
         const event = await log.get(id);
         return event ? json(event) : json({ error: "not_found" }, 404);
       }
-      return json(await log.query(parseQueryParams(params)));
+      // Action names from the URL are not checked against the catalog; unknown ones match nothing.
+      return json(await log.query(parseQueryParams(params) as AuditQueryOf<A>));
     } catch (error) {
       if (error instanceof AuditQueryError) return json({ error: error.message }, 400);
       throw error;

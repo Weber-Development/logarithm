@@ -11,6 +11,29 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # Real servers for the MySQL/MariaDB store tests; without these URLs the tests are skipped.
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: audit
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: audit
+        ports: ["3307:3306"]
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      MYSQL_URL: mysql://root:root@127.0.0.1:3306/audit
+      MARIADB_URL: mariadb://root:root@127.0.0.1:3307/audit
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

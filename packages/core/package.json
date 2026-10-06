@@ -1,7 +1,7 @@
 {
   "name": "@sweberdev/logarithm",
   "version": "0.2.0",
-  "description": "Self-hosted audit log for SaaS apps: who changed what and when. Diffs with redaction, tenant-scoped queries, Postgres and SQLite stores, and a Fetch API handler for the React viewer.",
+  "description": "Self-hosted audit log for SaaS apps: who changed what and when. Diffs with redaction, tenant-scoped queries and counts, typed action catalogs, Postgres, MySQL/MariaDB and SQLite stores, and a Fetch API handler for the React viewer.",
   "license": "MIT",
   "author": "Seya Weber (https://github.com/sxwxbxr)",
   "homepage": "https://packages.sweber.dev/logarithm/docs",
@@ -49,6 +49,16 @@
         "default": "./dist/sqlite.cjs"
       }
     },
+    "./mysql": {
+      "import": {
+        "types": "./dist/mysql.d.ts",
+        "default": "./dist/mysql.js"
+      },
+      "require": {
+        "types": "./dist/mysql.d.cts",
+        "default": "./dist/mysql.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -65,6 +75,8 @@
     "multi-tenant",
     "postgres",
     "sqlite",
+    "mysql",
+    "mariadb",
     "gdpr",
     "soc2",
     "compliance"
@@ -81,6 +93,8 @@
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
     "@types/node": "^22.20.5",
+    "mariadb": "^3.5.4",
+    "mysql2": "^3.24.5",
     "tsup": "^8.5.1",
     "typescript": "^5.9.0",
     "vitest": "^5.0.3"

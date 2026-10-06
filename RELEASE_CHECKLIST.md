@@ -21,5 +21,5 @@ Stand 2026-10-05.
 
 ## Later
 
-- Stores for MySQL and libSQL/Turso, Drizzle schema export.
+- Store for libSQL/Turso, Drizzle schema export.
 - `<AuditLog>` translations for French and Italian.

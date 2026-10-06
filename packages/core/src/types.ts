@@ -85,9 +85,22 @@ export interface AuditQuery {
   cursor?: string | null;
 }
 
-export interface AuditPage {
+/** How `count()` groups events: by UTC day (`YYYY-MM-DD`), by action or by actor id. */
+export type AuditGroupBy = "day" | "action" | "actor";
+
+/** Filters for `count()`: the same as for `query()`, without paging. */
+export type AuditCountQuery = Omit<AuditQuery, "limit" | "cursor">;
+
+/** One group of a grouped `count()`. */
+export interface AuditGroupCount {
+  /** The day (`YYYY-MM-DD`, UTC), the action or the actor id. */
+  key: string;
+  count: number;
+}
+
+export interface AuditPage<E extends AuditEvent = AuditEvent> {
   /** Newest first. */
-  events: AuditEvent[];
+  events: E[];
   /** Pass as `cursor` to get the next (older) page; `null` on the last page. */
   nextCursor: string | null;
 }
@@ -113,6 +126,9 @@ export interface StoreQuery {
   limit: number;
 }
 
+/** A store query without paging, as `count` receives it. */
+export type StoreFilter = Omit<StoreQuery, "limit" | "before">;
+
 /**
  * Persistence for audit events. Implement this to use another database.
  * `query` must return events ordered by `occurredAt` descending, then `id` descending.
@@ -121,6 +137,11 @@ export interface AuditStore {
   insert(events: AuditEvent[]): Promise<void>;
   query(query: StoreQuery): Promise<AuditEvent[]>;
   get(id: string): Promise<AuditEvent | null>;
+  /**
+   * Counts matching events. Optional: without it, `count()` pages through `query`.
+   * With `groupBy`, returns one entry per group in any order; without, one entry with key `""`.
+   */
+  count?(query: StoreFilter, groupBy?: AuditGroupBy): Promise<AuditGroupCount[]>;
   /** Deletes events older than `before`; returns the number deleted. Used for retention. */
   deleteBefore?(before: string, tenantId?: string | null): Promise<number>;
   /** Replaces the stored actor of every event by `actorId`; returns the number changed. Used for erasure requests. */

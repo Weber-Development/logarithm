@@ -9,6 +9,7 @@
       "items": [
         "guides/recording",
         "guides/postgres",
+        "guides/mysql",
         "guides/sqlite",
         "guides/nextjs",
         "guides/react",

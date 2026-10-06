@@ -1,14 +1,28 @@
 import { createRedactor, DEFAULT_REDACT, diff, redactChanges, scrub } from "./diff";
 import { ulid } from "./id";
-import { encodeCursor, toIso, toStoreQuery } from "./query";
+import {
+  AuditQueryError,
+  countEvents,
+  encodeCursor,
+  GROUP_BY,
+  MAX_LIMIT,
+  sortGroups,
+  toIso,
+  toStoreFilter,
+  toStoreQuery,
+} from "./query";
 import type {
   AuditActor,
   AuditContext,
+  AuditCountQuery,
   AuditEvent,
   AuditEventInput,
+  AuditGroupBy,
+  AuditGroupCount,
   AuditPage,
   AuditQuery,
   AuditStore,
+  StoreFilter,
 } from "./types";
 
 export class AuditValidationError extends Error {
@@ -34,20 +48,89 @@ export interface AuditDefaults {
   metadata?: Record<string, unknown>;
 }
 
-export type AuditRecordInput = Omit<AuditEventInput, "actor"> & { actor?: AuditActor };
+// --- Typed action catalog -------------------------------------------------------------------
+// Types only: a catalog changes what the compiler accepts, never what runs.
 
-export interface AuditLog {
+/**
+ * An action catalog maps every action name to the type of its metadata, e.g.
+ * `{ "project.created": {}; "invoice.paid": { amount: number; currency: string } }`.
+ * Without a catalog, every action name and any metadata are accepted.
+ */
+export type AnyActions = Record<string, Record<string, unknown>>;
+
+/** The action names of a catalog. */
+export type ActionName<A> = keyof A & string;
+
+type ActionPrefixes<S extends string> = S extends `${infer Head}.${infer Tail}`
+  ? Head | `${Head}.${ActionPrefixes<Tail>}`
+  : never;
+
+/** A query filter for actions: a known action, a prefix of known actions like `project.*`, or `*`. */
+export type ActionPattern<A> = ActionName<A> | `${ActionPrefixes<ActionName<A>>}.*` | "*";
+
+/** Metadata is required when the catalog type of an action has required fields. */
+type MetadataInput<M> = Record<never, never> extends M ? { metadata?: M } : { metadata: M };
+
+type RecordInputBase = Omit<AuditEventInput, "action" | "metadata" | "actor"> & {
+  actor?: AuditActor;
+};
+
+/** What you pass to `record()`. With a catalog, `action` and `metadata` are checked against it. */
+export type AuditRecordInput<A = AnyActions> = {
+  [K in ActionName<A>]: RecordInputBase & { action: K } & MetadataInput<A[K]>;
+}[ActionName<A>];
+
+/** A stored event whose action belongs to the catalog. */
+export type AuditEventOf<A = AnyActions> = AuditEvent & { action: ActionName<A> };
+
+/** `AuditQuery` with action filters checked against the catalog. */
+export type AuditQueryOf<A = AnyActions> = Omit<AuditQuery, "action"> & {
+  action?: ActionPattern<A> | ActionPattern<A>[];
+};
+
+/** `AuditCountQuery` with action filters checked against the catalog. */
+export type AuditCountQueryOf<A = AnyActions> = Omit<AuditQueryOf<A>, "limit" | "cursor">;
+
+export interface AuditLog<A extends Record<keyof A, object> = AnyActions> {
   /** Records one event and returns it as stored. */
-  record(input: AuditRecordInput): Promise<AuditEvent>;
+  record(input: AuditRecordInput<A>): Promise<AuditEventOf<A>>;
   /** Records several events in one write. */
-  recordMany(inputs: AuditRecordInput[]): Promise<AuditEvent[]>;
+  recordMany(inputs: AuditRecordInput<A>[]): Promise<AuditEventOf<A>[]>;
   /** Lists events, newest first, one page at a time. */
-  query(query?: AuditQuery): Promise<AuditPage>;
+  query(query?: AuditQueryOf<A>): Promise<AuditPage<AuditEventOf<A>>>;
+  /**
+   * Counts the events per UTC day, action or actor id that match the filters. Days come oldest
+   * first, actions and actors by count descending.
+   */
+  count(query: AuditCountQueryOf<A> & { groupBy: AuditGroupBy }): Promise<AuditGroupCount[]>;
+  /** Counts the events that match the filters (the same filters as `query`, without paging). */
+  count(query?: AuditCountQueryOf<A> & { groupBy?: undefined }): Promise<number>;
   /** Returns one event or `null`. */
-  get(id: string): Promise<AuditEvent | null>;
+  get(id: string): Promise<AuditEventOf<A> | null>;
   /** A log that adds these defaults to every event, e.g. per request: `log.with({ tenantId, actor })`. */
-  with(defaults: AuditDefaults): AuditLog;
+  with(defaults: AuditDefaults): AuditLog<A>;
   readonly store: AuditStore;
+}
+
+/** Counts by paging through `query`, for stores without their own `count`. */
+async function countByScanning(
+  store: AuditStore,
+  filter: StoreFilter,
+  groupBy?: AuditGroupBy,
+): Promise<AuditGroupCount[]> {
+  const totals = new Map<string, number>();
+  let before: { occurredAt: string; id: string } | undefined;
+  for (;;) {
+    const page = await store.query({ ...filter, limit: MAX_LIMIT, ...(before ? { before } : {}) });
+    for (const group of countEvents(page, {}, groupBy)) {
+      totals.set(group.key, (totals.get(group.key) ?? 0) + group.count);
+    }
+    const last = page[page.length - 1];
+    if (page.length < MAX_LIMIT || !last) break;
+    before = { occurredAt: last.occurredAt, id: last.id };
+  }
+  if (!groupBy) return [{ key: "", count: totals.get("") ?? 0 }];
+  return Array.from(totals, ([key, count]) => ({ key, count }));
 }
 
 const ACTION = /^[A-Za-z0-9_-]+(\.[A-Za-z0-9_-]+)*$/;
@@ -74,8 +157,17 @@ function validateActor(actor: AuditActor | undefined): AuditActor {
  *   before, after,
  * })
  * ```
+ *
+ * Pass an action catalog to have the compiler check action names, filters and metadata:
+ *
+ * ```ts
+ * type Actions = { "project.updated": {}; "invoice.paid": { amount: number } }
+ * const audit = createAuditLog<Actions>({ store })
+ * ```
  */
-export function createAuditLog(options: AuditLogOptions): AuditLog {
+export function createAuditLog<A extends Record<keyof A, object> = AnyActions>(
+  options: AuditLogOptions,
+): AuditLog<A> {
   const { store } = options;
   const redact = options.redact ?? DEFAULT_REDACT;
   const isRedacted = createRedactor(redact);
@@ -126,8 +218,23 @@ export function createAuditLog(options: AuditLogOptions): AuditLog {
     };
   };
 
+  const scope = <Q extends AuditCountQuery>(query: Q, defaults: AuditDefaults): Q =>
+    defaults.tenantId !== undefined ? { ...query, tenantId: defaults.tenantId } : query;
+
   const make = (defaults: AuditDefaults): AuditLog => ({
     store,
+    count: (async (query: AuditCountQuery & { groupBy?: AuditGroupBy } = {}) => {
+      const { groupBy, ...rest } = query;
+      if (groupBy !== undefined && !GROUP_BY.includes(groupBy)) {
+        throw new AuditQueryError(`groupBy must be one of ${GROUP_BY.join(", ")}`);
+      }
+      const filter = toStoreFilter(scope(rest, defaults));
+      const groups = store.count
+        ? await store.count(filter, groupBy)
+        : await countByScanning(store, filter, groupBy);
+      if (!groupBy) return groups.reduce((total, g) => total + g.count, 0);
+      return sortGroups(groups, groupBy);
+    }) as AuditLog["count"],
     async record(input) {
       const event = build(input, defaults);
       await store.insert([event]);
@@ -139,9 +246,7 @@ export function createAuditLog(options: AuditLogOptions): AuditLog {
       return events;
     },
     async query(query = {}) {
-      const q = toStoreQuery(
-        defaults.tenantId !== undefined ? { ...query, tenantId: defaults.tenantId } : query,
-      );
+      const q = toStoreQuery(scope(query as AuditQuery, defaults));
       // Fetch one more than requested to know whether another page exists.
       const rows = await store.query({ ...q, limit: q.limit + 1 });
       const events = rows.slice(0, q.limit);
@@ -164,5 +269,5 @@ export function createAuditLog(options: AuditLogOptions): AuditLog {
     },
   });
 
-  return make(options.defaults ?? {});
+  return make(options.defaults ?? {}) as unknown as AuditLog<A>;
 }

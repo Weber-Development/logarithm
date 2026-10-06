@@ -17,4 +17,4 @@ export const audit = createAuditLog({ store: sqliteStore({ db }) })
 
 Timestamps are stored as ISO text in UTC, which sorts correctly. JSON columns are stored as text. `sqliteSchema()` returns the SQL if you prefer your own migrations.
 
-SQLite suits single-server apps, desktop apps with Electron or Tauri, and tests. For several app servers writing at once, use Postgres.
+SQLite suits single-server apps, desktop apps with Electron or Tauri, and tests. For several app servers writing at once, use Postgres or MySQL.

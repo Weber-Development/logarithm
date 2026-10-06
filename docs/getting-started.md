@@ -41,5 +41,5 @@ description: Install Logarithm, create the table and record your first event.
 ## Requirements
 
 - Node.js 20 or newer, or Bun, Deno, Cloudflare Workers (the core uses only Web APIs)
-- Postgres 13 or newer, or SQLite 3.38 or newer
+- Postgres 13 or newer, MySQL 8.0 or newer, MariaDB 10.6 or newer, or SQLite 3.38 or newer
 - React 18 or newer for the viewer

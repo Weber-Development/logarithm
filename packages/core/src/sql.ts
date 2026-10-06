@@ -1,5 +1,5 @@
 import { searchText } from "./query";
-import type { AuditEvent, StoreQuery } from "./types";
+import type { AuditEvent, AuditGroupBy, AuditGroupCount, StoreQuery } from "./types";
 
 /** Table and schema names are interpolated into SQL, so only plain identifiers are accepted. */
 export function identifier(name: string): string {
@@ -9,8 +9,11 @@ export function identifier(name: string): string {
   return `"${name}"`;
 }
 
-export function escapeLike(text: string): string {
-  return text.replace(/[\\%_]/g, (c) => `\\${c}`);
+/** Escapes `%`, `_` and the escape character itself for a LIKE pattern. */
+export function escapeLike(text: string, escapeChar = "\\"): string {
+  let out = "";
+  for (const c of text) out += c === "%" || c === "_" || c === escapeChar ? `${escapeChar}${c}` : c;
+  return out;
 }
 
 export interface Row {
@@ -70,10 +73,17 @@ export interface WhereDialect {
   targetHas(field: "id" | "type", param: string): string;
   /** Wraps a timestamp parameter. */
   time(param: string): string;
+  /** Escape character for LIKE patterns. Default backslash. */
+  likeEscape?: string;
 }
 
 /** Builds the WHERE clause shared by the SQL stores. */
-export function buildWhere(q: StoreQuery, d: WhereDialect): { sql: string; params: unknown[] } {
+export function buildWhere(
+  q: Omit<StoreQuery, "limit">,
+  d: WhereDialect,
+): { sql: string; params: unknown[] } {
+  const esc = d.likeEscape ?? "\\";
+  const escapeClause = `ESCAPE '${esc}'`;
   const clauses: string[] = [];
   const params: unknown[] = [];
   const p = (value: unknown) => {
@@ -86,7 +96,9 @@ export function buildWhere(q: StoreQuery, d: WhereDialect): { sql: string; param
   if (q.actions || q.actionPrefixes) {
     const any = [
       ...(q.actions ?? []).map((a) => `action = ${p(a)}`),
-      ...(q.actionPrefixes ?? []).map((a) => `action LIKE ${p(`${escapeLike(a)}%`)} ESCAPE '\\'`),
+      ...(q.actionPrefixes ?? []).map(
+        (a) => `action LIKE ${p(`${escapeLike(a, esc)}%`)} ${escapeClause}`,
+      ),
     ];
     clauses.push(`(${any.join(" OR ")})`);
   }
@@ -94,11 +106,29 @@ export function buildWhere(q: StoreQuery, d: WhereDialect): { sql: string; param
   if (q.targetType) clauses.push(d.targetHas("type", p(q.targetType)));
   if (q.from) clauses.push(`occurred_at >= ${d.time(p(q.from))}`);
   if (q.to) clauses.push(`occurred_at < ${d.time(p(q.to))}`);
-  if (q.search) clauses.push(`search LIKE ${p(`%${escapeLike(q.search)}%`)} ESCAPE '\\'`);
+  if (q.search) clauses.push(`search LIKE ${p(`%${escapeLike(q.search, esc)}%`)} ${escapeClause}`);
   if (q.before) {
     const at = d.time(p(q.before.occurredAt));
     const at2 = d.time(p(q.before.occurredAt));
     clauses.push(`(occurred_at < ${at} OR (occurred_at = ${at2} AND id < ${p(q.before.id)}))`);
   }
   return { sql: clauses.length ? `WHERE ${clauses.join(" AND ")}` : "", params };
+}
+
+/** Turns the rows of `SELECT <key> AS group_key, COUNT(*) AS n ... GROUP BY 1` into counts. */
+export function toGroups(
+  rows: { group_key?: unknown; n: unknown }[],
+  groupBy?: AuditGroupBy,
+): AuditGroupCount[] {
+  if (!groupBy) return [{ key: "", count: Number(rows[0]?.n ?? 0) }];
+  return rows.map((r) => ({ key: String(r.group_key), count: Number(r.n) }));
+}
+
+/** The SELECT and GROUP BY part of a count query, given the SQL expression for each grouping. */
+export function countSelect(
+  groupBy: AuditGroupBy | undefined,
+  keys: Record<AuditGroupBy, string>,
+): { select: string; group: string } {
+  if (!groupBy) return { select: "COUNT(*) AS n", group: "" };
+  return { select: `${keys[groupBy]} AS group_key, COUNT(*) AS n`, group: " GROUP BY 1" };
 }
