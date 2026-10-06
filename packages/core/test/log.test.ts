@@ -36,6 +36,31 @@ describe("diff", () => {
     ]);
   });
 
+  it("redacts snake_case, kebab-case and upper-case spellings of sensitive names", () => {
+    expect(
+      diff(
+        {},
+        {
+          access_token: "t",
+          "client-secret": "c",
+          API_KEY: "k",
+          headers: { Authorization: "Bearer x", accept: "json" },
+          user: { new_password: "p", name: "Anna" },
+        },
+      ),
+    ).toEqual([
+      { field: "API_KEY", after: "[redacted]" },
+      { field: "access_token", after: "[redacted]" },
+      { field: "client-secret", after: "[redacted]" },
+      { field: "headers", after: { Authorization: "[redacted]", accept: "json" } },
+      { field: "user", after: { new_password: "[redacted]", name: "Anna" } },
+    ]);
+    // Names you pass yourself get the same treatment.
+    expect(diff({}, { ssn_number: "1" }, { redact: ["ssnNumber"] })).toEqual([
+      { field: "ssn_number", after: "[redacted]" },
+    ]);
+  });
+
   it("ignores listed fields and normalises dates", () => {
     const d1 = new Date("2026-01-01T00:00:00Z");
     expect(

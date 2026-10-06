@@ -2,7 +2,10 @@ import type { AuditChange } from "./types";
 
 export const REDACTED = "[redacted]";
 
-/** Field names whose values are never stored. Matched case-insensitively against the last path segment. */
+/**
+ * Field names whose values are never stored. Matched against the last path segment, ignoring case
+ * and the separators `_` and `-`, so `apiKey`, `api_key` and `API-KEY` are all the same name.
+ */
 export const DEFAULT_REDACT = [
   "password",
   "passwordHash",
@@ -17,6 +20,16 @@ export const DEFAULT_REDACT = [
   "cardNumber",
   "cvc",
   "iban",
+  "authorization",
+  "clientSecret",
+  "secretKey",
+  "passphrase",
+  "sessionToken",
+  "cookie",
+  "currentPassword",
+  "newPassword",
+  "oldPassword",
+  "passwordConfirmation",
 ];
 
 export interface DiffOptions {
@@ -60,11 +73,14 @@ function equal(a: unknown, b: unknown): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
+/** `apiKey`, `api_key` and `API-KEY` become the same name. */
+const canonicalName = (name: string) => name.toLowerCase().replace(/[_-]/g, "");
+
 export function createRedactor(redact: string[] = DEFAULT_REDACT): (field: string) => boolean {
-  const names = new Set(redact.map((r) => r.toLowerCase()));
+  const names = new Set(redact.map(canonicalName));
   return (field) => {
     const last = field.split(".").pop() ?? field;
-    return names.has(last.toLowerCase());
+    return names.has(canonicalName(last));
   };
 }
 
