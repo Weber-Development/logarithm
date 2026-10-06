@@ -1,4 +1,13 @@
-import { buildWhere, fromRow, identifier, type Row, toRow } from "./sql";
+import {
+  buildWhere,
+  countSelect,
+  fromRow,
+  identifier,
+  type Row,
+  toGroups,
+  toRow,
+  type WhereDialect,
+} from "./sql";
 import type { AuditActor, AuditStore } from "./types";
 
 /**
@@ -58,6 +67,19 @@ export async function migratePostgres(options: PostgresStoreOptions): Promise<vo
 const COLUMNS =
   "id, occurred_at, tenant_id, action, actor_id, actor, targets, changes, context, metadata";
 
+const DIALECT: WhereDialect = {
+  param: (n) => `$${n}`,
+  time: (p) => `${p}::timestamptz`,
+  targetHas: (field, p) =>
+    `targets @> jsonb_build_array(jsonb_build_object('${field}', ${p}::text))`,
+};
+
+const GROUP_KEYS = {
+  day: "to_char(occurred_at AT TIME ZONE 'UTC', 'YYYY-MM-DD')",
+  action: "action",
+  actor: "actor_id",
+};
+
 /** Stores events in Postgres (13 or newer). Run {@link migratePostgres} once before use. */
 export function postgresStore(options: PostgresStoreOptions): AuditStore {
   const { client } = options;
@@ -94,18 +116,23 @@ export function postgresStore(options: PostgresStoreOptions): AuditStore {
     },
 
     async query(q) {
-      const where = buildWhere(q, {
-        param: (n) => `$${n}`,
-        time: (p) => `${p}::timestamptz`,
-        targetHas: (field, p) =>
-          `targets @> jsonb_build_array(jsonb_build_object('${field}', ${p}::text))`,
-      });
+      const where = buildWhere(q, DIALECT);
       const limit = `$${where.params.length + 1}`;
       const result = await client.query(
         `SELECT ${COLUMNS} FROM ${table} ${where.sql} ORDER BY occurred_at DESC, id DESC LIMIT ${limit}`,
         [...where.params, q.limit],
       );
       return (result.rows as Row[]).map(fromRow);
+    },
+
+    async count(filter, groupBy) {
+      const where = buildWhere(filter, DIALECT);
+      const { select, group } = countSelect(groupBy, GROUP_KEYS);
+      const result = await client.query(
+        `SELECT ${select} FROM ${table} ${where.sql}${group}`,
+        where.params,
+      );
+      return toGroups(result.rows as { group_key?: unknown; n: unknown }[], groupBy);
     },
 
     async get(id) {

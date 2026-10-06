@@ -1,4 +1,4 @@
-import { compareEvents, matches } from "./query";
+import { compareEvents, countEvents, matches } from "./query";
 import type { AuditActor, AuditEvent, AuditStore, StoreQuery } from "./types";
 
 /**
@@ -22,6 +22,9 @@ export function memoryStore(initial: AuditEvent[] = []): AuditStore & { events: 
           .sort(compareEvents)
           .slice(0, q.limit),
       );
+    },
+    async count(filter, groupBy) {
+      return countEvents(events, filter, groupBy);
     },
     async get(id) {
       const event = events.find((e) => e.id === id);

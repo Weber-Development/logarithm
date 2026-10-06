@@ -21,6 +21,29 @@ await audit.record({
 
 Name actions `resource.verb` in the past tense: `project.created`, `invoice.paid`, `api_key.rotated`, `user.signed_in`. Letters, digits, `_` and `-`, separated by dots. Filters accept a prefix such as `project.*`.
 
+## Typed actions
+
+Give `createAuditLog` an action catalog and the compiler checks every action name, every `action` filter and the metadata of each action. The catalog is a type only: nothing changes at runtime, and logs without one accept any action as before.
+
+```ts
+type Actions = {
+  "project.created": {}
+  "project.updated": { reason?: string }
+  "invoice.paid": { amount: number; currency: "CHF" | "EUR" }
+  "member.role_changed": { role: "admin" | "member" }
+}
+
+export const audit = createAuditLog<Actions>({ store })
+
+await audit.record({ action: "invoice.paid", actor, metadata: { amount: 120, currency: "CHF" } })
+await audit.record({ action: "invoice.payed", actor })    // error: unknown action
+await audit.record({ action: "invoice.paid", actor })     // error: metadata is required
+await audit.query({ action: "member.*" })                 // ok: prefix of known actions
+await audit.count({ action: "billing.*", groupBy: "day" }) // error: no such prefix
+```
+
+Metadata is optional for actions whose type has no required fields. `audit.with()` keeps the catalog, and returned events have `action` typed as the union of catalog names.
+
 ## Actors
 
 `actor.id` is required. `type` defaults to `user`; use `api_key`, `system` or `job` for everything else, so the viewer can tell people and automation apart.

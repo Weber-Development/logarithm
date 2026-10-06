@@ -1,4 +1,13 @@
-import { buildWhere, fromRow, identifier, type Row, toRow } from "./sql";
+import {
+  buildWhere,
+  countSelect,
+  fromRow,
+  identifier,
+  type Row,
+  toGroups,
+  toRow,
+  type WhereDialect,
+} from "./sql";
 import type { AuditActor, AuditStore } from "./types";
 
 interface Statement {
@@ -52,6 +61,16 @@ export function migrateSqlite(options: SqliteStoreOptions): void {
 const COLUMNS =
   "id, occurred_at, tenant_id, action, actor_id, actor, targets, changes, context, metadata";
 
+const DIALECT: WhereDialect = {
+  param: () => "?",
+  time: (p) => p,
+  targetHas: (field, p) =>
+    `EXISTS (SELECT 1 FROM json_each(targets) WHERE json_extract(value, '$.${field}') = ${p})`,
+};
+
+// Timestamps are stored as ISO text in UTC, so the first ten characters are the day.
+const GROUP_KEYS = { day: "substr(occurred_at, 1, 10)", action: "action", actor: "actor_id" };
+
 /**
  * Stores events in SQLite. Timestamps are stored as ISO 8601 text in UTC, which sorts correctly.
  * Run {@link migrateSqlite} once before use.
@@ -98,18 +117,22 @@ export function sqliteStore(options: SqliteStoreOptions): AuditStore {
     },
 
     async query(q) {
-      const where = buildWhere(q, {
-        param: () => "?",
-        time: (p) => p,
-        targetHas: (field, p) =>
-          `EXISTS (SELECT 1 FROM json_each(targets) WHERE json_extract(value, '$.${field}') = ${p})`,
-      });
+      const where = buildWhere(q, DIALECT);
       const rows = db
         .prepare(
           `SELECT ${COLUMNS} FROM ${table} ${where.sql} ORDER BY occurred_at DESC, id DESC LIMIT ?`,
         )
         .all(...where.params, q.limit) as Row[];
       return rows.map(fromRow);
+    },
+
+    async count(filter, groupBy) {
+      const where = buildWhere(filter, DIALECT);
+      const { select, group } = countSelect(groupBy, GROUP_KEYS);
+      const rows = db
+        .prepare(`SELECT ${select} FROM ${table} ${where.sql}${group}`)
+        .all(...where.params) as { group_key?: unknown; n: unknown }[];
+      return toGroups(rows, groupBy);
     },
 
     async get(id) {

@@ -3,7 +3,7 @@ title: API
 description: Functions and types of @sweberdev/logarithm.
 ---
 
-## `createAuditLog(options)`
+## `createAuditLog<Actions>(options)`
 
 | Option | Type | Meaning |
 |---|---|---|
@@ -20,10 +20,33 @@ Returns an `AuditLog`:
 | `record(input)` | `Promise<AuditEvent>` |
 | `recordMany(inputs)` | `Promise<AuditEvent[]>`, one write |
 | `query(query?)` | `Promise<AuditPage>`, newest first |
+| `count(query?)` | `Promise<number>`, the number of matching events |
+| `count({ ...query, groupBy })` | `Promise<AuditGroupCount[]>`, counts per day, action or actor |
 | `get(id)` | `Promise<AuditEvent \| null>` |
 | `with(defaults)` | A scoped `AuditLog` |
 
 Invalid input throws `AuditValidationError`; invalid queries throw `AuditQueryError`.
+
+`Actions` is an optional [action catalog](guides/recording.md#typed-actions). Without it, any action name and any metadata are accepted, as before.
+
+## `count(query)`
+
+Takes the same filters as `query` (`tenantId`, `actorId`, `action`, `targetId`, `targetType`, `from`, `to`, `search`), without `limit` and `cursor`. A log scoped with `with({ tenantId })` counts only that tenant.
+
+```ts
+await audit.count({ tenantId: org.id, action: "member.*", from: "2026-10-01" }) // 42
+
+await audit.count({ tenantId: org.id, groupBy: "day" })
+// [{ key: "2026-10-01", count: 12 }, { key: "2026-10-02", count: 30 }]
+```
+
+| `groupBy` | `key` | Order |
+|---|---|---|
+| `"day"` | UTC day, `YYYY-MM-DD` | Oldest first; days without events are left out |
+| `"action"` | Action name | Most frequent first, then by name |
+| `"actor"` | Actor id | Most frequent first, then by id |
+
+The built-in stores count in the database. A [custom store](reference/custom-store.md) without `count` still works: the log pages through `query` instead.
 
 ## `AuditQuery`
 
@@ -70,3 +93,4 @@ interface AuditEvent {
 |---|---|
 | `@sweberdev/logarithm/postgres` | `postgresStore`, `migratePostgres`, `postgresSchema` |
 | `@sweberdev/logarithm/sqlite` | `sqliteStore`, `migrateSqlite`, `sqliteSchema` |
+| `@sweberdev/logarithm/mysql` | `mysqlStore`, `migrateMysql`, `mysqlSchema` (MySQL 8+, MariaDB 10.6+) |

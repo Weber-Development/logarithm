@@ -1,12 +1,25 @@
 import { DatabaseSync } from "node:sqlite";
 import { PGlite } from "@electric-sql/pglite";
+import * as mariadb from "mariadb";
+import * as mysql from "mysql2/promise";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { type AuditLog, type AuditStore, createAuditLog, memoryStore } from "../src/index";
+import { migrateMysql, mysqlStore } from "../src/mysql";
 import { migratePostgres, postgresStore } from "../src/postgres";
 import { migrateSqlite, sqliteStore } from "../src/sqlite";
 
 const pg = new PGlite();
 afterAll(() => pg.close());
+
+// MySQL and MariaDB run only with a server: set MYSQL_URL (tested with mysql2) and/or MARIADB_URL
+// (tested with the mariadb driver), e.g. mysql://root:root@127.0.0.1:3306/audit. CI sets both.
+const { MYSQL_URL, MARIADB_URL } = process.env;
+const mysqlPool = MYSQL_URL ? mysql.createPool({ uri: MYSQL_URL, connectionLimit: 2 }) : null;
+const mariadbPool = MARIADB_URL ? mariadb.createPool(MARIADB_URL) : null;
+afterAll(async () => {
+  await mysqlPool?.end();
+  await mariadbPool?.end();
+});
 
 const factories: Record<string, () => Promise<AuditStore>> = {
   memory: async () => memoryStore(),
@@ -20,6 +33,20 @@ const factories: Record<string, () => Promise<AuditStore>> = {
     await migratePostgres({ client: pg });
     return postgresStore({ client: pg });
   },
+  ...(mysqlPool && {
+    mysql: async () => {
+      await mysqlPool.query("DROP TABLE IF EXISTS audit_events");
+      await migrateMysql({ client: mysqlPool });
+      return mysqlStore({ client: mysqlPool });
+    },
+  }),
+  ...(mariadbPool && {
+    mariadb: async () => {
+      await mariadbPool.query("DROP TABLE IF EXISTS audit_events");
+      await migrateMysql({ client: mariadbPool });
+      return mysqlStore({ client: mariadbPool });
+    },
+  }),
 };
 
 const anna = { id: "u_anna", name: "Anna Muster", email: "anna@example.ch" };
@@ -128,6 +155,9 @@ describe.each(Object.keys(factories))("%s store", (kind) => {
     expect((await audit.query({ search: "carla@" })).events).toHaveLength(1);
     expect((await audit.query({ search: "signed" })).events).toHaveLength(1);
     expect((await audit.query({ search: "100%" })).events).toHaveLength(0);
+    expect((await audit.query({ search: "anna_" })).events).toHaveLength(0);
+    expect((await audit.query({ search: "!" })).events).toHaveLength(0);
+    expect((await audit.query({ search: "\\" })).events).toHaveLength(0);
   });
 
   it("pages with a cursor, including events in the same millisecond", async () => {
@@ -144,6 +174,51 @@ describe.each(Object.keys(factories))("%s store", (kind) => {
     } while (cursor);
     expect(seen).toHaveLength(9);
     expect(new Set(seen).size).toBe(9);
+  });
+
+  it("counts with the same filters as query", async () => {
+    expect(await audit.count()).toBe(5);
+    expect(await audit.count({ action: "project.*" })).toBe(3);
+    expect(await audit.count({ action: ["member.invited", "user.*"] })).toBe(2);
+    expect(await audit.count({ actorId: "u_anna", tenantId: "acme" })).toBe(2);
+    expect(await audit.count({ targetId: "p1" })).toBe(2);
+    expect(await audit.count({ targetType: "member" })).toBe(1);
+    expect(await audit.count({ search: "keller" })).toBe(1);
+    expect(await audit.count({ search: "100%" })).toBe(0);
+    expect(await audit.count({ tenantId: null })).toBe(1);
+    expect(
+      await audit.count({ from: "2026-10-01T08:02:00.000Z", to: "2026-10-01T08:04:00.000Z" }),
+    ).toBe(2);
+    // A scoped log counts only its tenant.
+    expect(await audit.with({ tenantId: "acme" }).count({ tenantId: "globex" })).toBe(3);
+  });
+
+  it("counts grouped by day, action and actor", async () => {
+    await audit.record({
+      action: "project.updated",
+      actor: ben,
+      occurredAt: "2026-10-03T23:59:59.999Z",
+    });
+    await audit.record({
+      action: "project.updated",
+      actor: ben,
+      occurredAt: "2026-10-04T00:00:00.000Z",
+    });
+    expect(await audit.count({ groupBy: "day" })).toEqual([
+      { key: "2026-10-01", count: 5 },
+      { key: "2026-10-03", count: 1 },
+      { key: "2026-10-04", count: 1 },
+    ]);
+    expect(await audit.count({ groupBy: "action", tenantId: null })).toEqual([
+      { key: "project.updated", count: 2 },
+      { key: "user.signed_in", count: 1 },
+    ]);
+    expect(await audit.count({ groupBy: "actor", action: "project.*" })).toEqual([
+      { key: "u_ben", count: 3 },
+      { key: "u_anna", count: 1 },
+      { key: "u_greta", count: 1 },
+    ]);
+    expect(await audit.count({ groupBy: "action", actorId: "nobody" })).toEqual([]);
   });
 
   it("deletes old events for retention", async () => {
