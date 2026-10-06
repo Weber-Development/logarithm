@@ -27,7 +27,7 @@ Returns an `AuditLog`:
 
 Invalid input throws `AuditValidationError`; invalid queries throw `AuditQueryError`.
 
-`Actions` is an optional [action catalog](guides/recording.md#typed-actions). Without it, any action name and any metadata are accepted, as before.
+`Actions` is an optional [action catalog](../guides/recording.md#typed-actions). Without it, any action name and any metadata are accepted, as before.
 
 ## `count(query)`
 
@@ -46,7 +46,7 @@ await audit.count({ tenantId: org.id, groupBy: "day" })
 | `"action"` | Action name | Most frequent first, then by name |
 | `"actor"` | Actor id | Most frequent first, then by id |
 
-The built-in stores count in the database. A [custom store](reference/custom-store.md) without `count` still works: the log pages through `query` instead.
+The built-in stores count in the database. A [custom store](custom-store.md) without `count` still works: the log pages through `query` instead.
 
 ## `AuditQuery`
 

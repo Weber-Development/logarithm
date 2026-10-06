@@ -58,4 +58,4 @@ try {
 
 ## Protect the table
 
-Grant your application user only `INSERT` and `SELECT` on the table and run retention with a separate user. [Logarithm Pro](pro/integrity.md) adds a hash chain that makes changes visible even to someone with full database access.
+Grant your application user only `INSERT` and `SELECT` on the table and run retention with a separate user. [Logarithm Pro](../pro/integrity.md) adds a hash chain that makes changes visible even to someone with full database access.
