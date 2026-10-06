@@ -11,6 +11,8 @@
         "guides/postgres",
         "guides/mysql",
         "guides/sqlite",
+        "guides/migrations",
+        "guides/drizzle-prisma",
         "guides/nextjs",
         "guides/react",
         "guides/multi-tenant",

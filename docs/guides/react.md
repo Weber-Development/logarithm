@@ -81,3 +81,10 @@ Pass `scope={{ targetId: project.id }}` to show the activity of one object, e.g.
 ## Your own layout
 
 `useAuditLog({ endpoint, query })` returns `events`, `loading`, `error`, `hasMore`, `loadMore()` and `reload()`. `describeAction(event, { locale })` from the core package builds the sentence.
+
+## Accessibility and theming
+
+The default stylesheet meets WCAG 2.2 AA text contrast (4.5:1) in the light and the dark theme for every pair of text and background colour, which the test suite checks on every release. Expanding a row uses a button with `aria-expanded` and `aria-controls`, filters sit in a labelled `search` landmark, result counts are announced through a polite live region, and errors use `role="alert"`. All controls are reachable by keyboard and show a focus ring.
+
+Colours, radius and fonts are CSS custom properties on `.lg-root` (`--lg-bg`, `--lg-fg`, `--lg-muted`, `--lg-border`, `--lg-surface`, `--lg-accent`, `--lg-removed`, `--lg-added`, `--lg-radius`, `--lg-font`, `--lg-mono`). Dark mode follows `prefers-color-scheme`; force a theme with `data-theme="light"` or `data-theme="dark"` on the root element. If you change the colours, keep the 4.5:1 contrast between text and its background.
+

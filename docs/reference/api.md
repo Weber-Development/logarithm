@@ -94,3 +94,4 @@ interface AuditEvent {
 | `@sweberdev/logarithm/postgres` | `postgresStore`, `migratePostgres`, `postgresSchema` |
 | `@sweberdev/logarithm/sqlite` | `sqliteStore`, `migrateSqlite`, `sqliteSchema` |
 | `@sweberdev/logarithm/mysql` | `mysqlStore`, `migrateMysql`, `mysqlSchema` (MySQL 8+, MariaDB 10.6+) |
+| `@sweberdev/logarithm/testing` | `storeConformanceChecks`, `runStoreConformance`, `ConformanceError` for your own stores |
