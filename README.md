@@ -35,7 +35,7 @@ await audit.record({
 
 ## Logarithm Pro
 
-Tamper evidence with an HMAC hash chain, retention periods with archiving, GDPR/FADP erasure and access requests, CSV export, and forwarding to Splunk, Datadog or signed webhooks. See [packages.sweber.dev/logarithm](https://packages.sweber.dev/logarithm).
+Tamper evidence with an HMAC hash chain, retention periods with archiving, GDPR/FADP erasure and access requests, CSV export, forwarding to Splunk, Datadog or signed webhooks, Slack and Microsoft Teams alerts, and anomaly detection for exports, deletions and failed logins. See [packages.sweber.dev/logarithm](https://packages.sweber.dev/logarithm).
 
 ## Development
 

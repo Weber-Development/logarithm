@@ -40,6 +40,10 @@ const store = withForwarding(postgresStore({ client: pool }), [
 
 The body is `{ "events": [...] }`. The header `x-logarithm-signature: t=<unix seconds>,v1=<hex>` carries an HMAC-SHA256 of `"<t>.<body>"`, like Stripe. Receivers check it with `verifyWebhook(body, header, secret)`, which also rejects signatures older than five minutes.
 
+### Slack and Microsoft Teams
+
+`slackSink` and `teamsSink` post selected actions to chat channels, and `detectAnomalies` flags unusually many exports, deletions or failed logins. See [Alerts and anomalies](alerts.md).
+
 ### Your own sink
 
 ```ts

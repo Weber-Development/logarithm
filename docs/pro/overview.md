@@ -1,6 +1,6 @@
 ---
 title: Logarithm Pro
-description: Tamper evidence, retention and privacy requests, export and forwarding.
+description: Tamper evidence, retention and privacy requests, export, forwarding and alerts.
 ---
 
 The free packages record and show events. Logarithm Pro adds what enterprise customers, auditors and data protection officers ask for next.
@@ -9,7 +9,7 @@ The free packages record and show events. Logarithm Pro adds what enterprise cus
 |---|---|
 | `@weber-development/logarithm-integrity` | [Tamper evidence](integrity.md): every event is linked to the previous one with an HMAC hash chain; a verifier shows which event was changed, removed or reordered |
 | `@weber-development/logarithm-retention` | [Retention and privacy](retention.md): retention periods per customer with archiving, GDPR and Swiss FADP erasure with a stable pseudonym, access-request export |
-| `@weber-development/logarithm-export` | [Export and forwarding](export.md): streamed CSV, NDJSON and JSON downloads for your customers, delivery to signed webhooks, Splunk and Datadog |
+| `@weber-development/logarithm-export` | [Export and forwarding](export.md): streamed CSV, NDJSON and JSON downloads for your customers, delivery to signed webhooks, Splunk and Datadog; [alerts](alerts.md) to Slack and Microsoft Teams and anomaly detection for exports, deletions and failed logins |
 
 All three wrap the store you already use, so adding them changes one line:
 

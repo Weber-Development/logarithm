@@ -23,7 +23,7 @@
     },
     {
       "label": "Logarithm Pro",
-      "items": ["pro/overview", "pro/integrity", "pro/retention", "pro/export"]
+      "items": ["pro/overview", "pro/integrity", "pro/retention", "pro/export", "pro/alerts"]
     },
     {
       "label": "Legal",
