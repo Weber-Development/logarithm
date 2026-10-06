@@ -55,4 +55,4 @@ try {
 
 ## Protect the table
 
-Give your application role only `INSERT` and `SELECT` on the table, and run retention with a separate role. That way a bug or an injection cannot rewrite history. [Logarithm Pro](pro/integrity.md) adds a hash chain that makes changes visible even to someone with full database access.
+Give your application role only `INSERT` and `SELECT` on the table, and run retention with a separate role. That way a bug or an injection cannot rewrite history. [Logarithm Pro](../pro/integrity.md) adds a hash chain that makes changes visible even to someone with full database access.
