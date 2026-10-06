@@ -19,7 +19,7 @@ export interface AuditLogProps {
   scope?: Omit<AuditQuery, "cursor" | "limit">;
   /** Entries per page. Default 25. */
   pageSize?: number;
-  /** BCP 47 locale for dates and built-in labels (`en` and `de` included). Default `en`. */
+  /** BCP 47 locale for dates and built-in labels (`en`, `de`, `fr` and `it` included). Default `en`. */
   locale?: string;
   /** Override single labels. */
   labels?: Partial<AuditLogLabels>;

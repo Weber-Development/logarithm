@@ -122,6 +122,22 @@ describe("describeAction", () => {
       ),
     ).toBe("hat die Rolle von member „x@y.ch“ geändert");
   });
+
+  it("builds sentences in French and Italian", () => {
+    const event = {
+      action: "project.updated",
+      targets: [{ type: "project", id: "p", name: "Website" }],
+    };
+    expect(describeAction(event, { locale: "fr-CH", nouns: { project: "le projet" } })).toBe(
+      "a modifié le projet « Website »",
+    );
+    expect(describeAction(event, { locale: "it-CH", nouns: { project: "il progetto" } })).toBe(
+      "ha modificato il progetto «Website»",
+    );
+    expect(describeAction({ action: "invoice.paid", targets: [] }, { locale: "fr" })).toBe(
+      "invoice : paid",
+    );
+  });
 });
 
 describe("createAuditHandler", () => {
