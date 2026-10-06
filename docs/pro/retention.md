@@ -49,6 +49,23 @@ await eraseActor(store, "user_123", { key: process.env.AUDIT_KEY!, recordTo: aud
 
 `applyRetention` records `audit_log.retention_applied` per tenant where events were deleted, with `keep`, `cutoff`, `archived` and `deleted` in `metadata`. `eraseActor` records `audit_log.actor_erased` with the pseudonym and counts, never the original id. Both use the actor `system:retention`. Dry runs record nothing.
 
+## Report for audits
+
+`retentionReport()` reads the entries recorded with `recordTo` and returns one row per retention run or erasure, oldest first. Add the legal basis per tenant, then hand the auditor a CSV or a printable page:
+
+```ts
+import { retentionReport, retentionReportCsv, retentionReportHtml } from "@weber-development/logarithm-retention"
+
+const rows = await retentionReport(store, {
+  from: "2026-01-01T00:00:00Z",
+  legalBasis: { "bank-ag": "FINMA, 10 years", "*": "Contract, 13 months" },
+})
+const csv = retentionReportCsv(rows)
+const html = retentionReportHtml(rows, { title: "Retention report 2026" }) // print to PDF from the browser
+```
+
+Columns: date, type, tenant, period, deleted-before time, archived, deleted or rewritten, pseudonym, legal basis, hold. Values that start with `=`, `+`, `-` or `@` are neutralised in the CSV, so spreadsheets never run them as formulas.
+
 ## Erasure requests
 
 ```ts
