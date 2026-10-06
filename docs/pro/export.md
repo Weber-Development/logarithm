@@ -49,3 +49,30 @@ The body is `{ "events": [...] }`. The header `x-logarithm-signature: t=<unix se
 ```ts
 const bigQuery: Sink = { name: "bigquery", send: (events) => table.insert(events) }
 ```
+
+## Evidence pack for auditors
+
+ISO 27001, SOC 2 and financial supervisors ask for the same things: the events, proof that the log was not changed, and proof that your retention rules ran. `buildEvidencePack()` collects them in one package:
+
+```ts
+import { buildEvidencePack, verifyEvidencePack, zipFiles } from "@weber-development/logarithm-export"
+import { verifyIntegrity } from "@weber-development/logarithm-integrity"
+import { retentionReport, retentionReportCsv, retentionReportHtml } from "@weber-development/logarithm-retention"
+
+const rows = await retentionReport(store, { tenantId: "acme" })
+const { files, manifest } = await buildEvidencePack(store, {
+  tenantId: "acme",
+  from: "2026-01-01T00:00:00Z",
+  to: "2026-09-30T23:59:59Z",
+  title: "Audit evidence Q1 to Q3 2026",
+  integrity: await verifyIntegrity(store, { key, tenantId: "acme", checkpoints }),
+  checkpoints, // or timestamped checkpoints
+  retention: { csv: retentionReportCsv(rows), html: retentionReportHtml(rows) },
+  signingKey: key,
+})
+const zip = zipFiles(files) // send as application/zip
+```
+
+The pack contains `events.csv`, `events.ndjson`, `integrity-report.json`, `checkpoints.json`, the retention report, a `README.txt` and `manifest.json`. The manifest lists every file with its size and SHA-256, plus the tenant, period and event count. With `signingKey` it carries an HMAC signature, so a changed manifest is detected too. Add your own files (policies, notes) with `extra`.
+
+`verifyEvidencePack(files, { signingKey })` re-computes all hashes and returns `{ ok, problems, signatureValid }`. An auditor can also check any file with `sha256sum` against the manifest, no software needed.
