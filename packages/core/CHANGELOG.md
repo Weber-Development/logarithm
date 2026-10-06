@@ -1,5 +1,11 @@
 # @sweberdev/logarithm
 
+## 0.4.0
+
+### Minor Changes
+
+- 7fdbfab: French and Italian: built-in labels for `<AuditLog>` and `<ActivityFeed>`, and sentences in `describeAction()` for `fr` and `it` locales.
+
 ## 0.3.0
 
 ### Minor Changes
