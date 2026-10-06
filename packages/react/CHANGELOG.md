@@ -1,5 +1,16 @@
 # @sweberdev/logarithm-react
 
+## 0.5.0
+
+### Minor Changes
+
+- 3a5048a: Add `@sweberdev/logarithm/testing` with a store conformance suite (`storeConformanceChecks`, `runStoreConformance`) so custom stores can prove they behave like the built-in ones. The viewer's colour contrast (WCAG AA, light and dark) is now verified by a test, and the docs gain guides for migrations, Drizzle and Prisma, a custom-store conformance chapter and an accessibility and theming section.
+
+### Patch Changes
+
+- Updated dependencies [3a5048a]
+  - @sweberdev/logarithm@0.5.0
+
 ## 0.4.0
 
 ### Minor Changes
