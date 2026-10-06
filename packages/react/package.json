@@ -1,6 +1,6 @@
 {
   "name": "@sweberdev/logarithm-react",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Ready-made React audit log view for Logarithm: filters, entries grouped by day, field-level diffs and paging. Accessible, themeable, English and German built in.",
   "license": "MIT",
   "author": "Seya Weber (https://github.com/sxwxbxr)",
