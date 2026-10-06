@@ -68,6 +68,7 @@ A Slack alert reads: `Unusual activity: Mallory (u_mallory) had 12 exports in 60
 | `tenantId` | Only one tenant. Default: all tenants, each counted on its own |
 | `sinks` | Where alerts go: `slackSink`, `teamsSink`, `webhookSink`, Splunk, Datadog or your own |
 | `record` | Also store each alert as a `logarithm.anomaly_detected` event, so it shows in the log. An alert already stored for the same rule, tenant and subject within the window is not sent again, so the cron job can run more often than the window |
+| `baseline` | Learn the threshold per rule and tenant from history, see below. `true` or `{ days, sigma, minThreshold, minSamples }` |
 | `onError` | Called when a sink fails; detection still returns |
 
 The default rules count per actor and hour:
@@ -93,3 +94,18 @@ await detectAnomalies({
 ```
 
 `detectAnomalies` returns the anomalies (`rule`, `subject`, `subjectName`, `tenantId`, `count`, `threshold`, `from`, `to`, up to 50 `eventIds`, and the alert `event`), most events first. If the store is wrapped with `withForwarding`, alerts stored with `record` are forwarded as well; then leave `sinks` empty or filter the forwarding sinks with `actions` to avoid duplicates.
+
+### Learned baselines
+
+A fixed threshold fits nobody: 10 exports per hour is a burst for a five-person team and a normal morning for a large customer. With `baseline`, Logarithm learns what is normal per rule and tenant:
+
+```ts
+await detectAnomalies({ store, sinks, record: true, baseline: true })
+// or tune it
+await detectAnomalies({ store, sinks, baseline: { days: 30, sigma: 3, minThreshold: 5 } })
+```
+
+For every rule and tenant it looks at the `days` (default 14) before the window, splits them into windows of the rule's length and counts events per subject and window. It then flags a subject whose count in the current window exceeds the mean plus `sigma` (default 3) standard deviations, but never fewer than `minThreshold` (default 3) events. A quiet tenant, where people usually export once per hour, is therefore alerted at 3 exports, and a busy tenant, where people export 20 times, only well above that.
+
+Only active windows count (a subject that did nothing in a window adds no sample), so the baseline describes how people behave when they use a feature. Until a rule has at least `minSamples` (default 20) such samples for a tenant, it keeps its fixed `threshold`, so new tenants are still covered. Each anomaly then carries the learned `threshold` and a `baseline` with `mean`, `stdDev`, `samples` and `days`. Learning reads the history on every run, so for large logs run the job every 15 minutes rather than every minute.
+
