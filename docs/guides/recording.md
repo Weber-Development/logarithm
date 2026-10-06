@@ -55,7 +55,7 @@ Pass `before` and `after` and Logarithm computes the diff:
 - Nested objects become dot paths such as `billing.plan`.
 - Arrays are compared as a whole.
 - Dates are stored as ISO strings.
-- Fields named `password`, `token`, `secret`, `apiKey`, `iban`, `cardNumber` and similar are stored as `[redacted]`, also inside nested objects and in `metadata`. Change the list with the `redact` option.
+- Fields named `password`, `token`, `secret`, `apiKey`, `iban`, `cardNumber` and similar are stored as `[redacted]`, also inside nested objects and in `metadata`. Names match regardless of case and of `_` and `-`, so `api_key`, `access_token` and `Authorization` are covered too. Change the list with the `redact` option.
 
 Skip noisy fields with `ignore`:
 
