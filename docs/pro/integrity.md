@@ -43,6 +43,25 @@ const report = await verifyIntegrity(store, { key, tenantId: "acme", checkpoints
 
 `truncated` means the chain now ends before a checkpoint, so the newest events were removed. `checkpoint-mismatch` means the event at a checkpoint has a different hash, so the chain was rebuilt. `checkpoint-invalid` means the checkpoint's signature does not match the key. Checkpoints older than the oldest remaining event (deleted by retention) are skipped. `report.checkpoints` counts the ones that matched.
 
+## Trusted timestamps
+
+A checkpoint proves the chain head, but not *when* you took it: whoever holds the key could backdate one. A time-stamping authority (RFC 3161) closes that gap. It certifies that the checkpoint existed at a point in time, and sees only a SHA-256 digest, never your data.
+
+```ts
+import { createCheckpoint, timestampCheckpoint, verifyTimestamp } from "@weber-development/logarithm-integrity"
+
+const checkpoint = await createCheckpoint(store, { key, tenantId: "acme" })
+const stamped = await timestampCheckpoint(checkpoint!, { tsa: "https://freetsa.org/tsr" })
+// { checkpoint, token: "<base64 DER>", genTime: "2026-10-06T12:00:00Z", tsa: "https://freetsa.org/tsr" }
+await bucket.put(`audit-checkpoints/acme/${checkpoint!.createdAt}.json`, JSON.stringify(stamped))
+
+await verifyTimestamp(stamped) // "2026-10-06T12:00:00Z", or null if the token belongs to another checkpoint
+```
+
+For regulated customers use a qualified authority. In Switzerland and the EU, qualified providers are listed in the national trusted lists, and their URL goes into `tsa`.
+
+`verifyTimestamp()` checks that the token covers the checkpoint and returns the certified time. It does not check the authority's signature. To verify that too, save the `token` (base64-decode it to a `.tsr` token file) and run `openssl ts -verify -token_in -in token.tsr -digest <sha256 hex of the checkpoint> -CAfile authority-ca.pem`.
+
 ## Works with retention and erasure
 
 - Deleting the oldest events with retention is fine: the chain then starts at a later `seq`, reported as `oldestSeq`.
