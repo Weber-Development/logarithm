@@ -91,9 +91,17 @@ interface AuditEvent {
 | `parseQueryParams(searchParams)` | Turns URL parameters into an `AuditQuery`, as `createAuditHandler` does |
 | `labelsFor(locale)` (`@sweberdev/logarithm-react`) | The built-in labels for a locale (`en`, `de`, `fr`, `it`), to extend them |
 
-## Supported API and deprecations
+## Stability
 
-Everything on this page is supported API and follows semantic versioning from 1.0. The package also exports a few internal helpers that are not documented here: `DEFAULT_LIMIT`, `MAX_LIMIT`, `encodeCursor`, `decodeCursor`, `toStoreQuery`, `toStoreFilter`, `sortGroups` and, in the React package, `relativeTime`. They are marked `@deprecated` in 0.6, so your editor shows it, and they will be removed from the public exports in 0.9. If you depend on one, open an issue before then.
+The API is frozen from 0.8 and follows semantic versioning from 1.0: no breaking change without a new major version, deprecations announced one minor version ahead with `@deprecated`.
+
+What the promise covers:
+
+- Everything on this page, the `AuditStore` interface and the types it uses, the parameters and responses of the [HTTP endpoint](http.md), and the props of `<AuditLog>` and `<ActivityFeed>`.
+- The table layout, through the schema version: a change to it is a new `SCHEMA_VERSION` with a migration, never a silent edit.
+- The CSS custom properties on `.lg-root` (`--lg-*`) and the `data-theme` attribute.
+
+What it does not cover: the `lg-*` class names inside the viewer (style through the custom properties, or tell us what is missing), text of error messages, and the exact wording of the built-in labels. Helpers that are not on this page were removed from the public exports in 0.8 (`DEFAULT_LIMIT`, `MAX_LIMIT`, `encodeCursor`, `decodeCursor`, `toStoreQuery`, `toStoreFilter`, `sortGroups` and, in the React package, `relativeTime`); they were deprecated since 0.6.
 
 ## Subpaths
 

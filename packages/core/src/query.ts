@@ -8,9 +8,9 @@ import type {
   StoreQuery,
 } from "./types";
 
-/** @deprecated Internal helper, not part of the supported API. It will be removed from the public exports in 0.9. */
+/** @internal Not part of the public API. */
 export const DEFAULT_LIMIT = 50;
-/** @deprecated Internal helper, not part of the supported API. It will be removed from the public exports in 0.9. */
+/** @internal Not part of the public API. */
 export const MAX_LIMIT = 500;
 
 export class AuditQueryError extends Error {
@@ -37,12 +37,12 @@ function fromBase64Url(text: string): string {
   return new TextDecoder().decode(Uint8Array.from(binary, (c) => c.charCodeAt(0)));
 }
 
-/** @deprecated Internal helper, not part of the supported API. It will be removed from the public exports in 0.9. */
+/** @internal Not part of the public API. */
 export function encodeCursor(event: Pick<AuditEvent, "occurredAt" | "id">): string {
   return toBase64Url(`${event.occurredAt}|${event.id}`);
 }
 
-/** @deprecated Internal helper, not part of the supported API. It will be removed from the public exports in 0.9. */
+/** @internal Not part of the public API. */
 export function decodeCursor(cursor: string): { occurredAt: string; id: string } {
   let text: string;
   try {
@@ -59,7 +59,7 @@ export function decodeCursor(cursor: string): { occurredAt: string; id: string }
 
 /**
  * Validates a public query and turns it into the form the stores receive.
- * @deprecated Internal helper, not part of the supported API. It will be removed from the public exports in 0.9.
+ * @internal Not part of the public API.
  */
 export function toStoreQuery(query: AuditQuery = {}): StoreQuery {
   const limit = query.limit ?? DEFAULT_LIMIT;
@@ -132,7 +132,7 @@ export const GROUP_BY: readonly AuditGroupBy[] = ["day", "action", "actor"];
 
 /**
  * Validates the filters of a `count()` query. Paging fields are not allowed.
- * @deprecated Internal helper, not part of the supported API. It will be removed from the public exports in 0.9.
+ * @internal Not part of the public API.
  */
 export function toStoreFilter(query: AuditCountQuery = {}): StoreFilter {
   const {
@@ -157,7 +157,7 @@ export function groupKey(event: AuditEvent, groupBy: AuditGroupBy): string {
 /**
  * Orders grouped counts the way `count()` returns them: days oldest first, actions and actors by
  * count descending, then by key.
- * @deprecated Internal helper, not part of the supported API. It will be removed from the public exports in 0.9.
+ * @internal Not part of the public API.
  */
 export function sortGroups(groups: AuditGroupCount[], groupBy: AuditGroupBy): AuditGroupCount[] {
   return [...groups].sort((a, b) => {

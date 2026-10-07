@@ -48,7 +48,7 @@ const STEPS: [Intl.RelativeTimeFormatUnit, number][] = [
 
 /**
  * "5 minutes ago" in the given locale; "just now" below a minute.
- * @deprecated Internal helper, not part of the supported API. It will be removed from the public exports in 0.9.
+ * @internal Not part of the public API.
  */
 export function relativeTime(iso: string, now: number, locale: string, justNow: string): string {
   let value = (new Date(iso).getTime() - now) / 1000;
