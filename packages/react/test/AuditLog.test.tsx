@@ -1,7 +1,8 @@
 import { createAuditLog, memoryStore } from "@sweberdev/logarithm";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ActivityFeed, AuditLog, relativeTime, toSearchParams } from "../src/index";
+import { relativeTime } from "../src/ActivityFeed";
+import { ActivityFeed, AuditLog, toSearchParams } from "../src/index";
 
 afterEach(cleanup);
 

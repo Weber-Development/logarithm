@@ -27,15 +27,8 @@ export {
   AuditQueryError,
   compareEvents,
   countEvents,
-  DEFAULT_LIMIT,
-  decodeCursor,
-  encodeCursor,
-  MAX_LIMIT,
   matches,
   searchText,
-  sortGroups,
-  toStoreFilter,
-  toStoreQuery,
 } from "./query";
 export { SCHEMA_VERSION, SchemaVersionError } from "./schema";
 export type {
