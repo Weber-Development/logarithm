@@ -1,5 +1,16 @@
 # @sweberdev/logarithm-react
 
+## 0.8.0
+
+### Minor Changes
+
+- 170be4f: API freeze ahead of 1.0. The helpers that were deprecated in 0.6 are no longer exported: `DEFAULT_LIMIT`, `MAX_LIMIT`, `encodeCursor`, `decodeCursor`, `toStoreQuery`, `toStoreFilter`, `sortGroups` (core) and `relativeTime` (React). Nothing documented changes. The API reference now states what the 1.0 compatibility promise covers.
+
+### Patch Changes
+
+- Updated dependencies [170be4f]
+  - @sweberdev/logarithm@0.8.0
+
 ## 0.7.0
 
 ### Minor Changes
