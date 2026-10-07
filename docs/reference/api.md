@@ -86,6 +86,14 @@ interface AuditEvent {
 | `describeAction(event, { locale, nouns })` | Short sentence such as `updated project "Website"` |
 | `memoryStore()` | In-memory store for tests and demos |
 | `ulid()` | Time-sortable id |
+| `redactChanges(changes, redact?)`, `REDACTED`, `DEFAULT_REDACT` | Blank out sensitive fields in changes you built yourself; the marker is `[redacted]` |
+| `searchText(event)` | The text `search` matches against, for custom stores that index it |
+| `parseQueryParams(searchParams)` | Turns URL parameters into an `AuditQuery`, as `createAuditHandler` does |
+| `labelsFor(locale)` (`@sweberdev/logarithm-react`) | The built-in labels for a locale (`en`, `de`, `fr`, `it`), to extend them |
+
+## Supported API and deprecations
+
+Everything on this page is supported API and follows semantic versioning from 1.0. The package also exports a few internal helpers that are not documented here: `DEFAULT_LIMIT`, `MAX_LIMIT`, `encodeCursor`, `decodeCursor`, `toStoreQuery`, `toStoreFilter`, `sortGroups` and, in the React package, `relativeTime`. They are marked `@deprecated` in 0.6, so your editor shows it, and they will be removed from the public exports in 0.9. If you depend on one, open an issue before then.
 
 ## Subpaths
 

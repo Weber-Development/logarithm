@@ -2,7 +2,10 @@
   "sections": [
     {
       "label": "Start",
-      "items": ["introduction", "getting-started"]
+      "items": [
+        "introduction",
+        "getting-started"
+      ]
     },
     {
       "label": "Guides",
@@ -14,22 +17,36 @@
         "guides/migrations",
         "guides/drizzle-prisma",
         "guides/nextjs",
+        "guides/frameworks",
         "guides/react",
         "guides/multi-tenant",
-        "guides/privacy"
+        "guides/privacy",
+        "guides/security"
       ]
     },
     {
       "label": "Reference",
-      "items": ["reference/api", "reference/http", "reference/custom-store"]
+      "items": [
+        "reference/api",
+        "reference/http",
+        "reference/custom-store"
+      ]
     },
     {
       "label": "Logarithm Pro",
-      "items": ["pro/overview", "pro/integrity", "pro/retention", "pro/export", "pro/alerts"]
+      "items": [
+        "pro/overview",
+        "pro/integrity",
+        "pro/retention",
+        "pro/export",
+        "pro/alerts"
+      ]
     },
     {
       "label": "Legal",
-      "items": ["legal"]
+      "items": [
+        "legal"
+      ]
     }
   ]
 }
