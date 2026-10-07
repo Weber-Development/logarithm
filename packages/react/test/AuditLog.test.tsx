@@ -28,6 +28,26 @@ async function seed() {
   return audit;
 }
 
+describe("heading levels", () => {
+  it("uses h3 by default and the level you ask for", async () => {
+    const audit = await seed();
+    const { unmount } = render(<AuditLog fetchPage={(q) => audit.query(q)} />);
+    await screen.findByText(/4 entries/);
+    expect(screen.getAllByRole("heading", { level: 3 }).length).toBeGreaterThan(0);
+    unmount();
+    render(<AuditLog fetchPage={(q) => audit.query(q)} headingLevel={2} />);
+    await screen.findByText(/4 entries/);
+    expect(screen.getAllByRole("heading", { level: 2 }).length).toBeGreaterThan(0);
+    expect(screen.queryAllByRole("heading", { level: 3 })).toHaveLength(0);
+  });
+
+  it("sets the level of the activity feed title", async () => {
+    const audit = await seed();
+    render(<ActivityFeed fetchPage={(q) => audit.query(q)} headingLevel={2} />);
+    expect(await screen.findByRole("heading", { level: 2 })).toBeTruthy();
+  });
+});
+
 describe("<AuditLog>", () => {
   it("renders entries, details and paging", async () => {
     const audit = await seed();

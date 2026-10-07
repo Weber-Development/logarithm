@@ -1,0 +1,17 @@
+{
+  "name": "logarithm-a11y-audit",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild app.jsx --bundle --outfile=bundle.js --jsx=automatic --alias:react=./node_modules/react --alias:react-dom=./node_modules/react-dom --define:process.env.NODE_ENV='\"production\"' && cp ../../packages/react/dist/styles.css styles.css",
+    "audit": "node run.mjs",
+    "keyboard": "node kb.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.0",
+    "esbuild": "^0.25.0",
+    "playwright-core": "^1.50.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}

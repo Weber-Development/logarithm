@@ -37,7 +37,23 @@ export interface AuditLogProps {
   refreshKey?: unknown;
   /** Force a colour scheme. Default: follows `prefers-color-scheme`. */
   theme?: "light" | "dark";
+  /** Heading level of the day headings (2 to 5), so they fit below your page's headings. Default 3. */
+  headingLevel?: 2 | 3 | 4 | 5;
   className?: string;
+}
+
+/** @internal */
+export function Heading({
+  level,
+  className,
+  children,
+}: {
+  level: 2 | 3 | 4 | 5;
+  className: string;
+  children: ReactNode;
+}) {
+  const Tag = `h${level}` as "h2" | "h3" | "h4" | "h5";
+  return <Tag className={className}>{children}</Tag>;
 }
 
 /** @internal */
@@ -340,7 +356,9 @@ export function AuditLog(props: AuditLogProps) {
 
       {groups.map((group) => (
         <div key={group.key} className="lg-day">
-          <h3 className="lg-day-label">{dayLabel(group.date)}</h3>
+          <Heading level={props.headingLevel ?? 3} className="lg-day-label">
+            {dayLabel(group.date)}
+          </Heading>
           <ol className="lg-list">
             {group.events.map((event) => (
               <Entry
