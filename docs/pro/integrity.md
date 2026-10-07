@@ -60,7 +60,16 @@ await verifyTimestamp(stamped) // "2026-10-06T12:00:00Z", or null if the token b
 
 For regulated customers use a qualified authority. In Switzerland and the EU, qualified providers are listed in the national trusted lists, and their URL goes into `tsa`.
 
-`verifyTimestamp()` checks that the token covers the checkpoint and returns the certified time. It does not check the authority's signature. To verify that too, save the `token` (base64-decode it to a `.tsr` token file) and run `openssl ts -verify -token_in -in token.tsr -digest <sha256 hex of the checkpoint> -CAfile authority-ca.pem`.
+`verifyTimestamp()` checks that the token covers the checkpoint and returns the certified time. It does not check the authority's signature. For the full check, give `verifyTimestampChain()` the authority's root certificate (PEM or base64 DER), which you get from the authority and keep yourself:
+
+```ts
+import { verifyTimestampChain } from "@weber-development/logarithm-integrity"
+
+const proof = await verifyTimestampChain(stamped, { trustedRoots: [authorityRootPem] })
+// { genTime: "2026-10-06T12:00:00Z", signer: "CN=Example TSA, O=Example", chain: [...] }
+```
+
+It checks that the token covers the checkpoint, that the signature is valid, that the signer's certificate is meant for time-stamping, that the chain leads to one of your roots, and that every certificate was valid at the certified time. It throws with the reason when something does not hold. RSA and ECDSA (P-256, P-384, P-521) with SHA-2 are supported. Revocation is not checked: if an authority reports a compromised key, remove its root from `trustedRoots`. `verifyTimestampToken(token, digest, { trustedRoots })` does the same for a raw token and digest. The `openssl ts -verify` route stays valid for checking outside your code: save the `token` (base64-decode it to a `.tsr` token file) and run `openssl ts -verify -token_in -in token.tsr -digest <sha256 hex of the checkpoint> -CAfile authority-ca.pem`.
 
 ## Works with retention and erasure
 
