@@ -1,5 +1,20 @@
 # @sweberdev/logarithm-react
 
+## 0.7.0
+
+### Minor Changes
+
+- 4e39709: React: `headingLevel` (2 to 5) on `<AuditLog>` and `<ActivityFeed>` sets the level of the day headings and the feed title, so they fit below the headings of your page. An axe-core audit of the rendered viewer in a real browser (WCAG 2.0 to 2.2 A and AA plus best practices, light, dark and German) now reports no violations, and the audit harness lives in `audits/a11y`.
+- 4e39709: Core: the table layout now has a version. The schema SQL and `migrate*` create a small `<table>_meta` table that records it, `postgresSchemaVersion()`, `mysqlSchemaVersion()` and `sqliteSchemaVersion()` read it, and `migrate*` throws a `SchemaVersionError` when the database was created by a newer release, for example after a rollback. `SCHEMA_VERSION` and `SchemaVersionError` are exported. Existing tables keep working: the next `migrate*` adds the meta table.
+
+  Deprecations ahead of the 1.0 API freeze: the undocumented helpers `DEFAULT_LIMIT`, `MAX_LIMIT`, `encodeCursor`, `decodeCursor`, `toStoreQuery`, `toStoreFilter`, `sortGroups` (core) and `relativeTime` (React) are marked `@deprecated` and will be removed from the public exports in 0.9. The API reference now lists what is supported.
+
+### Patch Changes
+
+- Updated dependencies [4e39709]
+- Updated dependencies [4e39709]
+  - @sweberdev/logarithm@0.7.0
+
 ## 0.6.0
 
 ### Minor Changes
