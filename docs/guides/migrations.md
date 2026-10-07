@@ -25,7 +25,11 @@ console.log(postgresSchema({ schema: "audit", table: "audit_events" }))
 
 ## Upgrading Logarithm
 
-The table layout has not changed since 0.1: new versions work with the table that an older version created. If a future release adds a column or an index, the release notes say so, and re-running `migrate*` or your regenerated schema SQL applies it, because all statements are `IF NOT EXISTS`.
+The table layout has not changed since 0.1: new versions work with the table that an older version created. If a future release changes it, the release notes say so, and re-running `migrate*` or your regenerated schema SQL applies it.
+
+Since 0.6 the layout has a version number. The schema SQL creates a small table `<table>_meta` (default `audit_events_meta`) with one row, `schema_version`. Read it with `postgresSchemaVersion()`, `mysqlSchemaVersion()` or `sqliteSchemaVersion()`; it returns `null` when the tables were created by an older release, and `SCHEMA_VERSION` (exported by `@sweberdev/logarithm`) is the version this release creates.
+
+`migrate*` throws a `SchemaVersionError` when the database has a newer version than the code knows. That protects you from running an old deployment against a table that a newer release has changed, for example during a rollback. Update Logarithm instead of ignoring the error. If you copy the schema SQL into your own migration tool, include the `_meta` statements it prints, so the version is recorded there too.
 
 ## Large tables
 

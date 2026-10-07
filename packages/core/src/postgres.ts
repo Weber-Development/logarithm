@@ -1,3 +1,4 @@
+import { assertSchemaVersion, parseSchemaVersion, SCHEMA_VERSION } from "./schema";
 import {
   buildWhere,
   countSelect,
@@ -34,9 +35,17 @@ function qualified(options: { table?: string; schema?: string }): { table: strin
   return { table, name };
 }
 
+function metaTable(options: { table?: string; schema?: string }): string {
+  const { name } = qualified(options);
+  return options.schema
+    ? `${identifier(options.schema)}.${identifier(`${name}_meta`)}`
+    : identifier(`${name}_meta`);
+}
+
 /** The `CREATE TABLE` statements, to run yourself or to copy into your migration tool. */
 export function postgresSchema(options: { table?: string; schema?: string } = {}): string {
   const { table, name } = qualified(options);
+  const meta = metaTable(options);
   const index = (suffix: string) => identifier(`${name}_${suffix}`);
   return `CREATE TABLE IF NOT EXISTS ${table} (
   id text COLLATE "C" PRIMARY KEY,
@@ -54,11 +63,31 @@ export function postgresSchema(options: { table?: string; schema?: string } = {}
 CREATE INDEX IF NOT EXISTS ${index("tenant_time")} ON ${table} (tenant_id, occurred_at DESC, id DESC);
 CREATE INDEX IF NOT EXISTS ${index("actor_time")} ON ${table} (actor_id, occurred_at DESC);
 CREATE INDEX IF NOT EXISTS ${index("action")} ON ${table} (action text_pattern_ops);
-CREATE INDEX IF NOT EXISTS ${index("targets")} ON ${table} USING gin (targets jsonb_path_ops);`;
+CREATE INDEX IF NOT EXISTS ${index("targets")} ON ${table} USING gin (targets jsonb_path_ops);
+CREATE TABLE IF NOT EXISTS ${meta} (name text PRIMARY KEY, value text NOT NULL);
+INSERT INTO ${meta} (name, value) VALUES ('schema_version', '${SCHEMA_VERSION}') ON CONFLICT (name) DO NOTHING;`;
 }
 
-/** Creates the table and indexes if they do not exist yet. */
+/**
+ * The schema version stored in the database, or `null` when Logarithm has not created its tables
+ * there yet (or they predate version tracking).
+ */
+export async function postgresSchemaVersion(options: PostgresStoreOptions): Promise<number | null> {
+  const meta = metaTable(options);
+  const found = await options.client.query("SELECT to_regclass($1) AS found", [meta]);
+  if (!(found.rows[0] as { found: unknown } | undefined)?.found) return null;
+  const { rows } = await options.client.query(
+    `SELECT value FROM ${meta} WHERE name = 'schema_version'`,
+  );
+  return parseSchemaVersion((rows[0] as { value: unknown } | undefined)?.value);
+}
+
+/**
+ * Creates the table and indexes if they do not exist yet and records the schema version. Throws a
+ * `SchemaVersionError` when the database was created by a newer version of Logarithm.
+ */
 export async function migratePostgres(options: PostgresStoreOptions): Promise<void> {
+  assertSchemaVersion(await postgresSchemaVersion(options));
   for (const statement of postgresSchema(options).split(";\n")) {
     await options.client.query(statement);
   }

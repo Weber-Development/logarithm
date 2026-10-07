@@ -14,9 +14,12 @@
         "guides/migrations",
         "guides/drizzle-prisma",
         "guides/nextjs",
+        "guides/frameworks",
         "guides/react",
         "guides/multi-tenant",
-        "guides/privacy"
+        "guides/privacy",
+        "guides/performance",
+        "guides/security"
       ]
     },
     {

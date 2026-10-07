@@ -37,6 +37,7 @@ export {
   toStoreFilter,
   toStoreQuery,
 } from "./query";
+export { SCHEMA_VERSION, SchemaVersionError } from "./schema";
 export type {
   AuditActor,
   AuditChange,
