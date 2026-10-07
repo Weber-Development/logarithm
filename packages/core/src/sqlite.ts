@@ -1,3 +1,4 @@
+import { assertSchemaVersion, parseSchemaVersion, SCHEMA_VERSION } from "./schema";
 import {
   buildWhere,
   countSelect,
@@ -50,11 +51,33 @@ export function sqliteSchema(options: { table?: string } = {}): string {
 );
 CREATE INDEX IF NOT EXISTS ${index("tenant_time")} ON ${table} (tenant_id, occurred_at DESC, id DESC);
 CREATE INDEX IF NOT EXISTS ${index("actor_time")} ON ${table} (actor_id, occurred_at DESC);
-CREATE INDEX IF NOT EXISTS ${index("action")} ON ${table} (action);`;
+CREATE INDEX IF NOT EXISTS ${index("action")} ON ${table} (action);
+CREATE TABLE IF NOT EXISTS ${identifier(`${name}_meta`)} (name TEXT PRIMARY KEY, value TEXT NOT NULL);
+INSERT OR IGNORE INTO ${identifier(`${name}_meta`)} (name, value) VALUES ('schema_version', '${SCHEMA_VERSION}');`;
 }
 
-/** Creates the table and indexes if they do not exist yet. */
+/**
+ * The schema version stored in the database, or `null` when Logarithm has not created its tables
+ * there yet (or they predate version tracking).
+ */
+export function sqliteSchemaVersion(options: SqliteStoreOptions): number | null {
+  const meta = options.table ?? "audit_events";
+  const exists = options.db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
+    .all(`${meta}_meta`);
+  if (exists.length === 0) return null;
+  const rows = options.db
+    .prepare(`SELECT value FROM ${identifier(`${meta}_meta`)} WHERE name = 'schema_version'`)
+    .all() as { value: unknown }[];
+  return parseSchemaVersion(rows[0]?.value);
+}
+
+/**
+ * Creates the table and indexes if they do not exist yet and records the schema version. Throws a
+ * `SchemaVersionError` when the database was created by a newer version of Logarithm.
+ */
 export function migrateSqlite(options: SqliteStoreOptions): void {
+  assertSchemaVersion(sqliteSchemaVersion(options));
   options.db.exec(sqliteSchema(options));
 }
 

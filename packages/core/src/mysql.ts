@@ -1,3 +1,4 @@
+import { assertSchemaVersion, parseSchemaVersion, SCHEMA_VERSION } from "./schema";
 import {
   buildWhere,
   countSelect,
@@ -45,9 +46,17 @@ function qualified(options: { table?: string; database?: string }): {
   return { table, name };
 }
 
-/** The `CREATE TABLE` statement, to run yourself or to copy into your migration tool. */
+function metaTable(options: { table?: string; database?: string }): string {
+  const { name } = qualified(options);
+  return options.database
+    ? `${identifier(options.database)}.${identifier(`${name}_meta`)}`
+    : identifier(`${name}_meta`);
+}
+
+/** The `CREATE TABLE` statements, to run yourself (one after the other) or to copy into your migration tool. */
 export function mysqlSchema(options: { table?: string; database?: string } = {}): string {
   const { table, name } = qualified(options);
+  const meta = metaTable(options);
   const index = (suffix: string) => identifier(`${name}_${suffix}`);
   // utf8mb4_bin makes ids, actions and tenants compare exactly, like in Postgres and SQLite.
   return `CREATE TABLE IF NOT EXISTS ${table} (
@@ -65,12 +74,43 @@ export function mysqlSchema(options: { table?: string; database?: string } = {})
   INDEX ${index("tenant_time")} (tenant_id, occurred_at, id),
   INDEX ${index("actor_time")} (actor_id, occurred_at),
   INDEX ${index("action")} (action)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin`;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+CREATE TABLE IF NOT EXISTS ${meta} (
+  name VARCHAR(64) NOT NULL PRIMARY KEY,
+  value VARCHAR(191) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+INSERT IGNORE INTO ${meta} (name, value) VALUES ('schema_version', '${SCHEMA_VERSION}');`;
 }
 
-/** Creates the table and indexes if they do not exist yet. */
+/**
+ * The schema version stored in the database, or `null` when Logarithm has not created its tables
+ * there yet (or they predate version tracking).
+ */
+export async function mysqlSchemaVersion(options: MysqlStoreOptions): Promise<number | null> {
+  const name = `${options.table ?? "audit_events"}_meta`;
+  const meta = metaTable(options);
+  const found = rowsOf(
+    await options.client.query(
+      "SELECT COUNT(*) AS n FROM information_schema.tables WHERE table_schema = COALESCE(?, DATABASE()) AND table_name = ?",
+      [options.database ?? null, name],
+    ),
+  ) as { n: unknown }[];
+  if (Number(found[0]?.n) === 0) return null;
+  const rows = rowsOf(
+    await options.client.query(`SELECT value FROM ${meta} WHERE name = 'schema_version'`, []),
+  ) as { value: unknown }[];
+  return parseSchemaVersion(rows[0]?.value);
+}
+
+/**
+ * Creates the table and indexes if they do not exist yet and records the schema version. Throws a
+ * `SchemaVersionError` when the database was created by a newer version of Logarithm.
+ */
 export async function migrateMysql(options: MysqlStoreOptions): Promise<void> {
-  await options.client.query(mysqlSchema(options));
+  assertSchemaVersion(await mysqlSchemaVersion(options));
+  for (const statement of mysqlSchema(options).split(";\n")) {
+    await options.client.query(statement.replace(/;$/, ""));
+  }
 }
 
 /** Normalises what the different drivers resolve to. */
