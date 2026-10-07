@@ -1,6 +1,6 @@
 import { type AuditEvent, type AuditQuery, describeAction } from "@sweberdev/logarithm";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
-import { initials } from "./AuditLog";
+import { Heading, initials } from "./AuditLog";
 import { type AuditLogLabels, labelsFor } from "./labels";
 import { type FetchPage, useAuditLog } from "./useAuditLog";
 
@@ -25,6 +25,8 @@ export interface ActivityFeedProps {
   describe?: (event: AuditEvent) => ReactNode;
   /** Heading above the list. Pass `null` to hide it. Default: "Recent activity". */
   title?: ReactNode;
+  /** Heading level of the title (2 to 5). Default 3. */
+  headingLevel?: 2 | 3 | 4 | 5;
   /** Link to the full log, e.g. `/settings/audit-log`. */
   href?: string;
   /** Change to reload, e.g. after recording a new event. */
@@ -99,7 +101,11 @@ export function ActivityFeed(props: ActivityFeedProps) {
       aria-busy={loading}
       data-theme={props.theme}
     >
-      {title !== null && <h3 className="lg-feed-title">{title}</h3>}
+      {title !== null && (
+        <Heading level={props.headingLevel ?? 3} className="lg-feed-title">
+          {title}
+        </Heading>
+      )}
       {error && (
         <div className="lg-error" role="alert">
           <p>{t.error}</p>
