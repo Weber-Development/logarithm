@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import { AuditLog } from "../../packages/react/dist/index.js";
+import { AuditLog, ObjectHistory } from "../../packages/react/dist/index.js";
 
 const actors = [
   ["u1", "Anna Muster"],
@@ -28,18 +28,24 @@ const events = Array.from({ length: 60 }, (_, i) => ({
   changes:
     i % 2
       ? [
-          { path: "billing.plan", before: "free", after: "pro" },
-          { path: "name", before: "Old", after: "New" },
+          { field: "billing.plan", before: "free", after: "pro" },
+          { field: "name", before: "Old", after: "New" },
         ]
       : [],
   context: { ip: `10.0.0.${i}` },
   metadata: {},
+  outcome: i % 7 === 3 ? "denied" : i % 11 === 5 ? "failure" : "success",
+  correlationId: `req-${i}`,
 }));
 const fetchPage = async (q) => {
   const start = q.cursor ? Number(q.cursor) : 0;
   const size = q.limit ?? 25;
   const slice = events.slice(start, start + size);
   return { events: slice, nextCursor: start + size < events.length ? String(start + size) : null };
+};
+const historyPage = async (q) => {
+  const mine = events.filter((e) => e.targets.some((t) => t.id === q.targetId || e.id));
+  return { events: mine.filter((e) => e.changes.length).slice(0, q.limit ?? 20), nextCursor: null };
 };
 const params = new URLSearchParams(location.search);
 createRoot(document.getElementById("root")).render(
@@ -54,6 +60,14 @@ createRoot(document.getElementById("root")).render(
         { value: "project.*", label: "Projects" },
         { value: "invoice.*", label: "Invoices" },
       ]}
+    />
+    <ObjectHistory
+      headingLevel={2}
+      fetchPage={historyPage}
+      targetType="project"
+      targetId="p1"
+      theme={params.get("theme") ?? undefined}
+      locale={params.get("locale") ?? "en"}
     />
   </main>,
 );

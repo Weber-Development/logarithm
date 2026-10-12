@@ -77,7 +77,20 @@ For other languages, pass your own `labels` and a `describe` function.
 <ActivityFeed endpoint="/api/audit" limit={5} href="/settings/activity" locale="de-CH" />
 ```
 
-Pass `scope={{ targetId: project.id }}` to show the activity of one object, e.g. on a project page, and `title={null}` to hide the heading. The other props match `<AuditLog>`: `fetchPage`, `init`, `labels`, `nouns`, `describe`, `refreshKey`, `theme`, `headingLevel` (for its title) and `className`.
+Pass `scope={{ targetId: project.id }}` to show the activity of one object, e.g. on a project page, and `title={null}` to hide the heading. For the history of one object with a diff per change, use [`<ObjectHistory>`](#history-of-one-object). The other props match `<AuditLog>`: `fetchPage`, `init`, `labels`, `nouns`, `describe`, `refreshKey`, `theme`, `headingLevel` (for its title) and `className`.
+
+## History of one object
+
+`<ObjectHistory>` shows every recorded change to one object, newest first, with who made it, when, and the before and after value of each field. A filter narrows it to the changes of a single field, which answers "who changed the plan, and when" in one click. It uses the same endpoint and stylesheet as `<AuditLog>`.
+
+```tsx
+<ObjectHistory endpoint="/api/audit" targetType="project" targetId={project.id}
+  fieldLabels={{ "billing.plan": "Plan" }} locale="de-CH" />
+```
+
+Props: `targetType` and `targetId` (required), `scope` for further fixed filters, `pageSize` (default 20), `fieldLabels`, `nouns`, `describe`, `labels`, `locale`, `title` (`null` hides it), `headingLevel`, `theme`, `refreshKey`, `fetchPage`, `init` and `className`. The endpoint has to be a `createAuditHandler` that is allowed to read the object's tenant.
+
+Failed and denied events are marked with text and a symbol, not colour alone, in `<AuditLog>` and `<ObjectHistory>`. `<AuditLog>` also has a filter for the result and shows the correlation id under "Details".
 
 ## Your own layout
 

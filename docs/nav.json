@@ -2,13 +2,14 @@
   "sections": [
     {
       "label": "Start",
-      "items": ["introduction", "getting-started"]
+      "items": ["introduction", "getting-started", "migrating-to-2"]
     },
     {
       "label": "Guides",
       "items": [
         "guides/recording",
         "guides/postgres",
+        "guides/partitioning",
         "guides/mysql",
         "guides/sqlite",
         "guides/migrations",
@@ -16,6 +17,7 @@
         "guides/nextjs",
         "guides/frameworks",
         "guides/react",
+        "guides/formats",
         "guides/multi-tenant",
         "guides/privacy",
         "guides/performance",

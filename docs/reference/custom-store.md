@@ -14,6 +14,8 @@ interface AuditStore {
 }
 ```
 
+Since 2.0 an event can carry `outcome` and `correlationId`, and `StoreQuery` can filter by both. Your store has to save and return them, and a filter `outcome: "success"` has to match events that have no outcome (everything recorded before 2.0). The conformance suite checks all of this.
+
 `query` receives a validated `StoreQuery` and must return at most `limit` events ordered by `occurredAt` descending, then `id` descending. `before` is the keyset position for paging: return only events strictly older than `(occurredAt, id)`.
 
 The functions `matches(event, query)` and `compareEvents(a, b)` from the core package are the reference semantics; the test suite of the built-in stores runs the same cases against memory, SQLite, Postgres, MySQL and MariaDB.

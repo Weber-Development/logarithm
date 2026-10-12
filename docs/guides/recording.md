@@ -65,6 +65,27 @@ createAuditLog({ store, ignore: ["updatedAt", "version"], redact: [...DEFAULT_RE
 
 You can also pass `changes` yourself instead of `before` and `after`.
 
+## Outcome and correlation id
+
+Every event records how the action ended. `outcome` is `success` (the default), `failure` (it was attempted and went wrong) or `denied` (it was refused by a permission check or a policy). Denied attempts are often the ones an auditor asks about first, so record them, not just the actions that went through:
+
+```ts
+if (!can(user, "export", project)) {
+  await audit.record({
+    action: "export.created",
+    actor: { id: user.id },
+    targets: [{ type: "project", id: project.id }],
+    outcome: "denied",
+    metadata: { reason: "missing permission export:create" },
+  })
+  throw new ForbiddenError()
+}
+```
+
+`correlationId` ties together the events of one operation across services, such as a request id, a job id or a trace id. Set it once per request with `audit.with({ correlationId })` and every event of that request carries it. Both fields can be used as filters: `audit.query({ outcome: "denied" })`, `audit.query({ correlationId })`, and over HTTP as `?outcome=denied` and `?correlation=...`.
+
+Events recorded with Logarithm 1.x have no outcome. They count as `success` in filters and the stored event stays as it was, so a hash chain made with [Logarithm Pro](../pro/integrity.md) still verifies.
+
 ## Defaults per request
 
 `audit.with()` returns a log that fills in tenant, actor and context for every event. Create it once per request, e.g. in middleware:

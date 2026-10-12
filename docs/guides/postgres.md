@@ -33,9 +33,11 @@ console.log(postgresSchema({ table: "audit_events", schema: "audit" }))
 | `action` | `text` | e.g. `project.updated` |
 | `actor_id` | `text` | Copy of `actor.id` for fast filters |
 | `actor`, `targets`, `changes`, `context`, `metadata` | `jsonb` | Event data |
+| `outcome` | `text` | `success`, `failure` or `denied`; `NULL` for events from before 2.0 |
+| `correlation_id` | `text` | Request, job or trace id, or `NULL` |
 | `search` | `text` | Lower-case text for search |
 
-Indexes cover tenant + time, actor + time, action prefix and targets (GIN).
+Indexes cover tenant + time, actor + time, action prefix, targets (GIN) and correlation id. For tables that grow past a few hundred million rows, see [Partitioning](partitioning.md).
 
 ## Transactions
 

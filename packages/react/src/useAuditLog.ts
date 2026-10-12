@@ -36,6 +36,8 @@ export function toSearchParams(query: AuditQuery): URLSearchParams {
   if (query.from) params.set("from", new Date(query.from).toISOString());
   if (query.to) params.set("to", new Date(query.to).toISOString());
   if (query.search) params.set("q", query.search);
+  if (query.outcome) params.set("outcome", query.outcome);
+  if (query.correlationId) params.set("correlation", query.correlationId);
   if (query.limit) params.set("limit", String(query.limit));
   if (query.cursor) params.set("cursor", query.cursor);
   return params;

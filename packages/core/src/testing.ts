@@ -122,6 +122,58 @@ export const storeConformanceChecks: ConformanceCheck[] = [
     },
   },
   {
+    name: "stores the outcome and correlation id and filters by them (schema v2)",
+    async run(create) {
+      const { audit, store } = await seeded(create);
+      await audit.record({
+        action: "export.created",
+        actor: anna,
+        outcome: "denied",
+        correlationId: "req-42",
+      });
+      await audit.record({
+        action: "export.created",
+        actor: ben,
+        outcome: "failure",
+        correlationId: "req-42",
+      });
+      const [denied] = (await audit.query({ outcome: "denied" })).events;
+      same(denied?.outcome, "denied", "outcome");
+      same(denied?.correlationId, "req-42", "correlationId");
+      same((await audit.query({ correlationId: "req-42" })).events.length, 2, "by correlation id");
+      same((await audit.query({ outcome: "failure" })).events.length, 1, "failure");
+      // The five seeded events were recorded as successes.
+      same((await audit.query({ outcome: "success" })).events.length, 5, "success");
+      same(await audit.count({ outcome: "denied" }), 1, "count by outcome");
+      // Events written before 2.0 have no outcome and count as success.
+      await store.insert([
+        {
+          id: "01J00000000000000000000000",
+          occurredAt: "2026-09-01T00:00:00.000Z",
+          tenantId: null,
+          action: "legacy.event",
+          actor: { id: "u_old", type: "user" },
+          targets: [],
+          changes: [],
+          context: {},
+          metadata: {},
+        },
+      ]);
+      const legacy = await audit.get("01J00000000000000000000000");
+      same(legacy?.outcome, undefined, "legacy outcome stays absent");
+      same(
+        (await audit.query({ outcome: "success", action: "legacy.event" })).events.length,
+        1,
+        "legacy counts as success",
+      );
+      same(
+        (await audit.query({ outcome: "failure", action: "legacy.event" })).events.length,
+        0,
+        "legacy is no failure",
+      );
+    },
+  },
+  {
     name: "isolates tenants",
     async run(create) {
       const { audit } = await seeded(create);

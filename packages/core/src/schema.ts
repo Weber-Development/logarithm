@@ -2,7 +2,7 @@
  * Version of the table layout the built-in stores create. It is stored next to the audit table in
  * `<table>_meta`, so a later release can tell which layout a database has and migrate it.
  */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /** The database was created by a newer version of Logarithm than the one running. */
 export class SchemaVersionError extends Error {

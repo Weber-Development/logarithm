@@ -1,11 +1,12 @@
-import type {
-  AuditCountQuery,
-  AuditEvent,
-  AuditGroupBy,
-  AuditGroupCount,
-  AuditQuery,
-  StoreFilter,
-  StoreQuery,
+import {
+  AUDIT_OUTCOMES,
+  type AuditCountQuery,
+  type AuditEvent,
+  type AuditGroupBy,
+  type AuditGroupCount,
+  type AuditQuery,
+  type StoreFilter,
+  type StoreQuery,
 } from "./types";
 
 /** @internal Not part of the public API. */
@@ -75,6 +76,13 @@ export function toStoreQuery(query: AuditQuery = {}): StoreQuery {
   if (query.to !== undefined) out.to = toIso(query.to, "to");
   const search = query.search?.trim().toLowerCase();
   if (search) out.search = search;
+  if (query.outcome !== undefined) {
+    if (!AUDIT_OUTCOMES.includes(query.outcome)) {
+      throw new AuditQueryError(`outcome must be one of ${AUDIT_OUTCOMES.join(", ")}`);
+    }
+    out.outcome = query.outcome;
+  }
+  if (query.correlationId) out.correlationId = query.correlationId;
   const actions = (Array.isArray(query.action) ? query.action : query.action ? [query.action] : [])
     .map((a) => a.trim())
     .filter(Boolean);
@@ -114,6 +122,8 @@ export function matches(event: AuditEvent, q: StoreQuery): boolean {
   if (q.from && event.occurredAt < q.from) return false;
   if (q.to && event.occurredAt >= q.to) return false;
   if (q.search && !searchText(event).includes(q.search)) return false;
+  if (q.outcome && (event.outcome ?? "success") !== q.outcome) return false;
+  if (q.correlationId && event.correlationId !== q.correlationId) return false;
   if (q.before) {
     if (event.occurredAt > q.before.occurredAt) return false;
     if (event.occurredAt === q.before.occurredAt && event.id >= q.before.id) return false;

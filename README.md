@@ -31,7 +31,7 @@ await audit.record({
 - **Counts for dashboards.** `audit.count({ action: "member.*", groupBy: "day" })` on every store.
 - **Multi-tenant by default.** A log scoped with `audit.with({ tenantId })` cannot read other tenants.
 - **Safe diffs.** Passwords, tokens, API keys and card numbers are stored as `[redacted]`, also inside nested objects.
-- **Runs anywhere.** The core uses Web APIs only: Node 20+, Bun, Deno, Cloudflare Workers.
+- **Runs anywhere.** The core uses Web APIs only: Node 22+, Bun, Deno, Cloudflare Workers.
 
 ## Logarithm Pro
 

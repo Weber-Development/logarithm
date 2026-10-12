@@ -58,6 +58,8 @@ The built-in stores count in the database. A [custom store](custom-store.md) wit
 | `targetId`, `targetType` | Event has a target with this id or type |
 | `from`, `to` | Time range, `from` inclusive, `to` exclusive |
 | `search` | Case-insensitive text in action, actor and targets |
+| `outcome` | `success`, `failure` or `denied`; events from before 2.0 count as `success` |
+| `correlationId` | Events with this correlation id |
 | `limit` | 1 to 500, default 50 |
 | `cursor` | `nextCursor` of the previous page |
 
@@ -74,6 +76,8 @@ interface AuditEvent {
   changes: { field: string; before?: unknown; after?: unknown }[]
   context: { ip?: string; userAgent?: string; requestId?: string; location?: string }
   metadata: Record<string, unknown>
+  outcome?: "success" | "failure" | "denied"   // always set since 2.0
+  correlationId?: string
 }
 ```
 
@@ -89,11 +93,13 @@ interface AuditEvent {
 | `redactChanges(changes, redact?)`, `REDACTED`, `DEFAULT_REDACT` | Blank out sensitive fields in changes you built yourself; the marker is `[redacted]` |
 | `searchText(event)` | The text `search` matches against, for custom stores that index it |
 | `parseQueryParams(searchParams)` | Turns URL parameters into an `AuditQuery`, as `createAuditHandler` does |
+| `toCloudEvent(event, options?)`, `fromCloudEvent(ce)` | CloudEvents 1.0 envelope and back, see [Export formats](../guides/formats.md) |
+| `toOtelLogRecord(event)`, `toOtlpLogs(events, options?)` | OpenTelemetry log record and the `POST /v1/logs` body |
 | `labelsFor(locale)` (`@sweberdev/logarithm-react`) | The built-in labels for a locale (`en`, `de`, `fr`, `it`), to extend them |
 
 ## Stability
 
-The API is frozen from 0.8 and follows semantic versioning from 1.0: no breaking change without a new major version, deprecations announced one minor version ahead with `@deprecated`.
+The API is frozen from 0.8 and follows semantic versioning from 1.0: no breaking change without a new major version, deprecations announced one minor version ahead with `@deprecated`. Version 2.0 is the first major version; what it changed is listed in [Migrating to 2.0](../migrating-to-2.md). The 1.x line gets security and bug fixes for 12 months after the release of 2.0.0.
 
 What the promise covers:
 
@@ -107,7 +113,7 @@ What it does not cover: the `lg-*` class names inside the viewer (style through 
 
 | Import | Exports |
 |---|---|
-| `@sweberdev/logarithm/postgres` | `postgresStore`, `migratePostgres`, `postgresSchema`, `postgresSchemaVersion` |
-| `@sweberdev/logarithm/sqlite` | `sqliteStore`, `migrateSqlite`, `sqliteSchema`, `sqliteSchemaVersion` |
-| `@sweberdev/logarithm/mysql` | `mysqlStore`, `migrateMysql`, `mysqlSchema`, `mysqlSchemaVersion` (MySQL 8+, MariaDB 10.6+) |
+| `@sweberdev/logarithm/postgres` | `postgresStore`, `migratePostgres`, `postgresSchema`, `postgresSchemaVersion`, `postgresUpgradeSchema`, `ensurePartitions`, `listPartitions`, `detachPartitions` |
+| `@sweberdev/logarithm/sqlite` | `sqliteStore`, `migrateSqlite`, `sqliteSchema`, `sqliteSchemaVersion`, `sqliteUpgradeSchema` |
+| `@sweberdev/logarithm/mysql` | `mysqlStore`, `migrateMysql`, `mysqlSchema`, `mysqlSchemaVersion`, `mysqlUpgradeSchema` (MySQL 8+, MariaDB 10.6+) |
 | `@sweberdev/logarithm/testing` | `storeConformanceChecks`, `runStoreConformance`, `ConformanceError` for your own stores |

@@ -70,16 +70,28 @@ export function mysqlSchema(options: { table?: string; database?: string } = {})
   changes JSON NOT NULL,
   context JSON NOT NULL,
   metadata JSON NOT NULL,
+  outcome VARCHAR(16) NULL,
+  correlation_id VARCHAR(191) NULL,
   search TEXT NOT NULL,
   INDEX ${index("tenant_time")} (tenant_id, occurred_at, id),
   INDEX ${index("actor_time")} (actor_id, occurred_at),
-  INDEX ${index("action")} (action)
+  INDEX ${index("action")} (action),
+  INDEX ${index("correlation")} (correlation_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 CREATE TABLE IF NOT EXISTS ${meta} (
   name VARCHAR(64) NOT NULL PRIMARY KEY,
   value VARCHAR(191) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 INSERT IGNORE INTO ${meta} (name, value) VALUES ('schema_version', '${SCHEMA_VERSION}');`;
+}
+
+/**
+ * The statement that brings a table of schema version 1 (Logarithm 0.6 to 1.x) to version 2. MySQL
+ * has no `ADD COLUMN IF NOT EXISTS`, so run it only once; `migrateMysql` checks first.
+ */
+export function mysqlUpgradeSchema(options: { table?: string; database?: string } = {}): string {
+  const { table, name } = qualified(options);
+  return `ALTER TABLE ${table} ADD COLUMN outcome VARCHAR(16) NULL, ADD COLUMN correlation_id VARCHAR(191) NULL, ADD INDEX ${identifier(`${name}_correlation`)} (correlation_id)`;
 }
 
 /**
@@ -108,9 +120,24 @@ export async function mysqlSchemaVersion(options: MysqlStoreOptions): Promise<nu
  */
 export async function migrateMysql(options: MysqlStoreOptions): Promise<void> {
   assertSchemaVersion(await mysqlSchemaVersion(options));
+  const { name } = qualified(options);
+  const columns = rowsOf(
+    await options.client.query(
+      "SELECT column_name AS name FROM information_schema.columns WHERE table_schema = COALESCE(?, DATABASE()) AND table_name = ?",
+      [options.database ?? null, name],
+    ),
+  ) as { name?: string; NAME?: string; COLUMN_NAME?: string }[];
+  const names = columns.map((c) => c.name ?? c.NAME ?? c.COLUMN_NAME);
+  if (names.length > 0 && !names.includes("outcome")) {
+    await options.client.query(mysqlUpgradeSchema(options), []);
+  }
   for (const statement of mysqlSchema(options).split(";\n")) {
     await options.client.query(statement.replace(/;$/, ""));
   }
+  await options.client.query(
+    `UPDATE ${metaTable(options)} SET value = ? WHERE name = 'schema_version'`,
+    [String(SCHEMA_VERSION)],
+  );
 }
 
 /** Normalises what the different drivers resolve to. */
@@ -155,7 +182,7 @@ function toDatetimes<Q extends Omit<StoreQuery, "limit">>(q: Q): Q {
 
 // DATETIME has no time zone; read it back as text so no driver converts it to local time.
 const SELECT_COLUMNS =
-  "id, DATE_FORMAT(occurred_at, '%Y-%m-%dT%H:%i:%s.%fZ') AS occurred_at, tenant_id, action, actor_id, actor, targets, changes, context, metadata";
+  "id, DATE_FORMAT(occurred_at, '%Y-%m-%dT%H:%i:%s.%fZ') AS occurred_at, tenant_id, action, actor_id, actor, targets, changes, context, metadata, outcome, correlation_id";
 
 const DIALECT: WhereDialect = {
   param: () => "?",
@@ -198,12 +225,14 @@ export function mysqlStore(options: MysqlStoreOptions): AuditStore {
           r.changes,
           r.context,
           r.metadata,
+          r.outcome,
+          r.correlation_id,
           r.search,
         );
-        return "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        return "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
       });
       await client.query(
-        `INSERT INTO ${table} (id, occurred_at, tenant_id, action, actor_id, actor, targets, changes, context, metadata, search) VALUES ${tuples.join(", ")}`,
+        `INSERT INTO ${table} (id, occurred_at, tenant_id, action, actor_id, actor, targets, changes, context, metadata, outcome, correlation_id, search) VALUES ${tuples.join(", ")}`,
         values,
       );
     },
