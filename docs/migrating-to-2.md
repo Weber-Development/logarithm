@@ -5,7 +5,7 @@ description: What changed in Logarithm 2.0 and how to upgrade from 1.x.
 
 Logarithm 2.0 gives every event an outcome and a correlation id, maps events to CloudEvents and OpenTelemetry, partitions large Postgres tables and shows the history of one object. Most apps upgrade by running the migration once. This page lists everything that can break.
 
-The 1.x line gets security and bug fixes for 12 months after the release of 2.0.0.
+The 1.x line gets security and bug fixes for 12 months after the release of 2.0.0, until 12 October 2027.
 
 ## Upgrade in four steps
 
