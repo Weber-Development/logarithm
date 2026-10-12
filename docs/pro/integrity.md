@@ -71,6 +71,10 @@ const proof = await verifyTimestampChain(stamped, { trustedRoots: [authorityRoot
 
 It checks that the token covers the checkpoint, that the signature is valid, that the signer's certificate is meant for time-stamping, that the chain leads to one of your roots, and that every certificate was valid at the certified time. It throws with the reason when something does not hold. RSA and ECDSA (P-256, P-384, P-521) with SHA-2 are supported. Revocation is not checked: if an authority reports a compromised key, remove its root from `trustedRoots`. `verifyTimestampToken(token, digest, { trustedRoots })` does the same for a raw token and digest. The `openssl ts -verify` route stays valid for checking outside your code: save the `token` (base64-decode it to a `.tsr` token file) and run `openssl ts -verify -token_in -in token.tsr -digest <sha256 hex of the checkpoint> -CAfile authority-ca.pem`.
 
+## Upgrading from 1.x
+
+In 2.0 the hash covers `outcome` and `correlationId` when an event has them. Events written before the upgrade have neither, so their hash does not change and an existing chain verifies unchanged, also when new events are appended; a test pins a 1.x hash to guarantee it. A `denied` or `failure` event cannot later be changed to `success` without a `hash-mismatch`. Downgrading the application after writing 2.0 events makes a 1.x verifier report those events as changed, so verify with 2.x.
+
 ## Works with retention and erasure
 
 - Deleting the oldest events with retention is fine: the chain then starts at a later `seq`, reported as `oldestSeq`.
