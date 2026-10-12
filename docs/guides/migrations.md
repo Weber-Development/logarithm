@@ -21,11 +21,11 @@ import { postgresSchema } from "@sweberdev/logarithm/postgres"
 console.log(postgresSchema({ schema: "audit", table: "audit_events" }))
 ```
 
-`mysqlSchema()` and `sqliteSchema()` work the same way. Copy the output into a migration of Drizzle Kit, Prisma (`prisma migrate dev --create-only`), Flyway, Atlas or plain SQL files, see [Drizzle and Prisma](drizzle-prisma.md).
+`mysqlSchema()` and `sqliteSchema()` work the same way. To bring an existing table from version 1 to 2 in your own migration tool, print `postgresUpgradeSchema()`, `mysqlUpgradeSchema()` or `sqliteUpgradeSchema()` instead (and run the statements of the new `_meta` row yourself: `UPDATE <table>_meta SET value = '2' WHERE name = 'schema_version'`). Copy the output into a migration of Drizzle Kit, Prisma (`prisma migrate dev --create-only`), Flyway, Atlas or plain SQL files, see [Drizzle and Prisma](drizzle-prisma.md).
 
 ## Upgrading Logarithm
 
-The table layout has not changed since 0.1: new versions work with the table that an older version created. If a future release changes it, the release notes say so, and re-running `migrate*` or your regenerated schema SQL applies it.
+The table layout changed once since 0.1: Logarithm 2.0 adds the columns `outcome` and `correlation_id` (schema version 2). `migrate*` upgrades a table of any older version in place and keeps every existing event readable, see [Migrating to 2.0](../migrating-to-2.md). If a future release changes the layout again, the release notes say so, and re-running `migrate*` or your regenerated schema SQL applies it.
 
 Since 0.6 the layout has a version number. The schema SQL creates a small table `<table>_meta` (default `audit_events_meta`) with one row, `schema_version`. Read it with `postgresSchemaVersion()`, `mysqlSchemaVersion()` or `sqliteSchemaVersion()`; it returns `null` when the tables were created by an older release, and `SCHEMA_VERSION` (exported by `@sweberdev/logarithm`) is the version this release creates.
 

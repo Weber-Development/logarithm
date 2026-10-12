@@ -2,7 +2,7 @@ import { createAuditLog, memoryStore } from "@sweberdev/logarithm";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { relativeTime } from "../src/ActivityFeed";
-import { ActivityFeed, AuditLog, toSearchParams } from "../src/index";
+import { ActivityFeed, AuditLog, ObjectHistory, toSearchParams } from "../src/index";
 
 afterEach(cleanup);
 
@@ -168,5 +168,103 @@ describe("<ActivityFeed>", () => {
     expect(relativeTime("2026-10-05T11:59:30.000Z", now, "en", "just now")).toBe("just now");
     expect(relativeTime("2026-10-05T11:55:00.000Z", now, "en", "just now")).toBe("5 minutes ago");
     expect(relativeTime("2026-10-04T12:00:00.000Z", now, "de", "gerade eben")).toBe("gestern");
+  });
+});
+
+describe("outcome", () => {
+  it("shows failed and denied events with text, filters by result and shows the correlation id", async () => {
+    const audit = createAuditLog({ store: memoryStore() });
+    await audit.record({ action: "export.created", actor: { id: "u1", name: "Anna" } });
+    await audit.record({
+      action: "export.created",
+      actor: { id: "u2", name: "Ben" },
+      outcome: "denied",
+      correlationId: "req-7",
+    });
+    render(<AuditLog fetchPage={(q) => audit.query(q)} />);
+    await screen.findByText(/2 entries/);
+    expect(screen.getAllByText("Denied").length).toBeGreaterThan(0);
+    fireEvent.change(screen.getByLabelText("Result"), { target: { value: "denied" } });
+    await screen.findByText(/1 entry/);
+    fireEvent.click(screen.getByRole("button", { name: "Details" }));
+    expect(screen.getByText("req-7")).toBeTruthy();
+  });
+});
+
+describe("<ObjectHistory>", () => {
+  async function history() {
+    let clock = Date.parse("2026-10-01T08:00:00.000Z");
+    const audit = createAuditLog({
+      store: memoryStore(),
+      now: () => {
+        clock += 3_600_000;
+        return new Date(clock);
+      },
+    });
+    const target = [{ type: "project", id: "p1", name: "Website" }];
+    await audit.record({
+      action: "project.updated",
+      actor: { id: "u1", name: "Anna Muster" },
+      targets: target,
+      before: { plan: "free", name: "Site" },
+      after: { plan: "pro", name: "Site" },
+    });
+    await audit.record({
+      action: "project.updated",
+      actor: { id: "u2", name: "Ben Keller" },
+      targets: target,
+      before: { name: "Site" },
+      after: { name: "Website" },
+    });
+    await audit.record({
+      action: "project.updated",
+      actor: { id: "u3", name: "Other" },
+      targets: [{ type: "project", id: "p2" }],
+      before: { plan: "x" },
+      after: { plan: "y" },
+    });
+    return audit;
+  }
+
+  it("lists the changes of one object with before and after, newest first", async () => {
+    const audit = await history();
+    render(<ObjectHistory fetchPage={(q) => audit.query(q)} targetType="project" targetId="p1" />);
+    expect(await screen.findByText("Ben Keller")).toBeTruthy();
+    expect(screen.queryByText("Other")).toBeNull();
+    const entries = document.querySelectorAll(".lg-history-entry");
+    expect(entries).toHaveLength(2);
+    expect(entries[0]?.textContent).toContain("Ben Keller");
+    expect(screen.getAllByText("pro").length).toBe(1);
+  });
+
+  it("narrows the history to the changes of one field", async () => {
+    const audit = await history();
+    render(<ObjectHistory fetchPage={(q) => audit.query(q)} targetType="project" targetId="p1" />);
+    await screen.findByText("Ben Keller");
+    fireEvent.change(screen.getByLabelText("Show changes to"), { target: { value: "plan" } });
+    await waitFor(() => expect(document.querySelectorAll(".lg-history-entry")).toHaveLength(1));
+    expect(screen.getByText("Anna Muster")).toBeTruthy();
+    expect(screen.queryByText("Ben Keller")).toBeNull();
+  });
+
+  it("says so when an object has no history", async () => {
+    const audit = await history();
+    render(
+      <ObjectHistory fetchPage={(q) => audit.query(q)} targetType="project" targetId="nope" />,
+    );
+    expect(await screen.findByText(/No changes have been recorded/)).toBeTruthy();
+  });
+
+  it("translates the labels", async () => {
+    const audit = await history();
+    render(
+      <ObjectHistory
+        fetchPage={(q) => audit.query(q)}
+        targetType="project"
+        targetId="p1"
+        locale="de"
+      />,
+    );
+    expect(await screen.findByRole("heading", { name: "Verlauf" })).toBeTruthy();
   });
 });

@@ -27,6 +27,8 @@ export interface Row {
   changes: unknown;
   context: unknown;
   metadata: unknown;
+  outcome?: string | null;
+  correlation_id?: string | null;
 }
 
 export function toRow(event: AuditEvent) {
@@ -41,6 +43,8 @@ export function toRow(event: AuditEvent) {
     changes: JSON.stringify(event.changes),
     context: JSON.stringify(event.context),
     metadata: JSON.stringify(event.metadata),
+    outcome: event.outcome ?? null,
+    correlation_id: event.correlationId ?? null,
     search: searchText(event),
   };
 }
@@ -53,7 +57,7 @@ export function fromRow(row: Row): AuditEvent {
     row.occurred_at instanceof Date
       ? row.occurred_at.toISOString()
       : new Date(row.occurred_at).toISOString();
-  return {
+  const event: AuditEvent = {
     id: row.id,
     occurredAt,
     tenantId: row.tenant_id ?? null,
@@ -64,6 +68,9 @@ export function fromRow(row: Row): AuditEvent {
     context: parse(row.context),
     metadata: parse(row.metadata),
   };
+  if (row.outcome) event.outcome = row.outcome as AuditEvent["outcome"];
+  if (row.correlation_id) event.correlationId = row.correlation_id;
+  return event;
 }
 
 export interface WhereDialect {
@@ -106,6 +113,9 @@ export function buildWhere(
   if (q.targetType) clauses.push(d.targetHas("type", p(q.targetType)));
   if (q.from) clauses.push(`occurred_at >= ${d.time(p(q.from))}`);
   if (q.to) clauses.push(`occurred_at < ${d.time(p(q.to))}`);
+  if (q.outcome === "success") clauses.push(`(outcome = ${p("success")} OR outcome IS NULL)`);
+  else if (q.outcome) clauses.push(`outcome = ${p(q.outcome)}`);
+  if (q.correlationId) clauses.push(`correlation_id = ${p(q.correlationId)}`);
   if (q.search) clauses.push(`search LIKE ${p(`%${escapeLike(q.search, esc)}%`)} ${escapeClause}`);
   if (q.before) {
     const at = d.time(p(q.before.occurredAt));

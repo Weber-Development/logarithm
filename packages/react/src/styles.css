@@ -11,6 +11,8 @@
   --lg-removed-bg: #fff1f2;
   --lg-added: #166534;
   --lg-added-bg: #f0fdf4;
+  --lg-warn: #92400e;
+  --lg-warn-bg: #fffbeb;
   --lg-radius: 6px;
   --lg-font: inherit;
   --lg-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -34,6 +36,8 @@
     --lg-removed-bg: #3b0d17;
     --lg-added: #86efac;
     --lg-added-bg: #0b2e18;
+    --lg-warn: #fcd34d;
+    --lg-warn-bg: #3a2a05;
   }
 }
 
@@ -48,6 +52,8 @@
   --lg-removed-bg: #3b0d17;
   --lg-added: #86efac;
   --lg-added-bg: #0b2e18;
+  --lg-warn: #fcd34d;
+  --lg-warn-bg: #3a2a05;
 }
 
 .lg-filters {
@@ -321,4 +327,92 @@ ins.lg-value {
   margin-top: 0.5rem;
   font-size: 0.875rem;
   color: var(--lg-accent);
+}
+
+/* Outcome badge: text and a symbol, never colour alone. */
+.lg-outcome {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid currentColor;
+}
+
+.lg-outcome[data-outcome="failure"] {
+  color: var(--lg-removed);
+  background: var(--lg-removed-bg);
+}
+
+.lg-outcome[data-outcome="denied"] {
+  color: var(--lg-warn);
+  background: var(--lg-warn-bg);
+}
+
+/* <ObjectHistory> */
+.lg-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-left: 2px solid var(--lg-border);
+}
+
+.lg-history-entry {
+  position: relative;
+  padding: 0 0 1.25rem 1.25rem;
+}
+
+.lg-history-entry::before {
+  content: "";
+  position: absolute;
+  left: -0.4375rem;
+  top: 0.375rem;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: var(--lg-bg);
+  border: 2px solid var(--lg-accent);
+}
+
+.lg-history-head {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  align-items: baseline;
+}
+
+.lg-diff {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+}
+
+.lg-diff li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  align-items: baseline;
+}
+
+.lg-diff-field {
+  font-family: var(--lg-mono);
+  color: var(--lg-muted);
+}
+
+/* Text for screen readers only. */
+.lg-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

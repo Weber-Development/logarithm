@@ -2,6 +2,15 @@ export { type ContextOptions, contextFromRequest } from "./context";
 export { describeAction } from "./describe";
 export { DEFAULT_REDACT, type DiffOptions, diff, REDACTED, redactChanges } from "./diff";
 export {
+  type CloudEvent,
+  type CloudEventOptions,
+  fromCloudEvent,
+  type OtelLogRecord,
+  toCloudEvent,
+  toOtelLogRecord,
+  toOtlpLogs,
+} from "./formats";
+export {
   type AuditAccess,
   type AuditHandlerOptions,
   createAuditHandler,
@@ -40,6 +49,7 @@ export type {
   AuditEventInput,
   AuditGroupBy,
   AuditGroupCount,
+  AuditOutcome,
   AuditPage,
   AuditQuery,
   AuditStore,
@@ -47,3 +57,4 @@ export type {
   StoreFilter,
   StoreQuery,
 } from "./types";
+export { AUDIT_OUTCOMES } from "./types";

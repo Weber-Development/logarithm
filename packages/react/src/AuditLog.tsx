@@ -1,11 +1,13 @@
 import {
   type AuditChange,
   type AuditEvent,
+  type AuditOutcome,
   type AuditQuery,
   describeAction,
 } from "@sweberdev/logarithm";
 import { type ReactNode, useId, useMemo, useState } from "react";
 import { type AuditLogLabels, labelsFor } from "./labels";
+import { OutcomeBadge } from "./OutcomeBadge";
 import { type FetchPage, useAuditLog } from "./useAuditLog";
 
 export interface AuditLogProps {
@@ -144,6 +146,7 @@ function Entry({
       [t.location, event.context.location],
       [t.userAgent, event.context.userAgent],
       [t.requestId, event.context.requestId],
+      [t.correlation, event.correlationId],
       [t.tenant, event.tenantId ?? undefined],
       [t.eventId, event.id],
     ] as const
@@ -167,6 +170,7 @@ function Entry({
             {time.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}
           </time>
           <code className="lg-action">{event.action}</code>
+          <OutcomeBadge outcome={event.outcome} t={t} />
           {event.changes.length > 0 && (
             <span className="lg-count">{t.changeCount(event.changes.length)}</span>
           )}
@@ -220,18 +224,27 @@ export function AuditLog(props: AuditLogProps) {
   const [action, setAction] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const ids = { search: useId(), action: useId(), from: useId(), to: useId(), status: useId() };
+  const [outcome, setOutcome] = useState<AuditOutcome | "">("");
+  const ids = {
+    search: useId(),
+    action: useId(),
+    outcome: useId(),
+    from: useId(),
+    to: useId(),
+    status: useId(),
+  };
 
   const query = useMemo(() => {
     const q: Omit<AuditQuery, "cursor"> = { ...props.scope, limit: props.pageSize ?? 25 };
     if (search.trim()) q.search = search.trim();
     if (action) q.action = action;
+    if (outcome) q.outcome = outcome;
     const fromIso = fromLocalInput(from);
     if (fromIso) q.from = fromIso;
     const toIso = fromLocalInput(to);
     if (toIso) q.to = toIso;
     return q;
-  }, [props.scope, props.pageSize, search, action, from, to]);
+  }, [props.scope, props.pageSize, search, action, outcome, from, to]);
 
   const { events, loading, error, hasMore, loadMore, reload } = useAuditLog({
     endpoint: props.endpoint,
@@ -270,7 +283,7 @@ export function AuditLog(props: AuditLogProps) {
     });
   };
 
-  const filtered = Boolean(search || action || from || to);
+  const filtered = Boolean(search || action || outcome || from || to);
   const showFilters = props.filters !== false;
 
   return (
@@ -305,6 +318,19 @@ export function AuditLog(props: AuditLogProps) {
             </div>
           )}
           <div className="lg-field">
+            <label htmlFor={ids.outcome}>{t.outcome}</label>
+            <select
+              id={ids.outcome}
+              value={outcome}
+              onChange={(e) => setOutcome(e.target.value as AuditOutcome | "")}
+            >
+              <option value="">{t.allOutcomes}</option>
+              <option value="success">{t.outcomeSuccess}</option>
+              <option value="failure">{t.outcomeFailure}</option>
+              <option value="denied">{t.outcomeDenied}</option>
+            </select>
+          </div>
+          <div className="lg-field">
             <label htmlFor={ids.from}>{t.from}</label>
             <input
               id={ids.from}
@@ -329,6 +355,7 @@ export function AuditLog(props: AuditLogProps) {
               onClick={() => {
                 setSearch("");
                 setAction("");
+                setOutcome("");
                 setFrom("");
                 setTo("");
               }}

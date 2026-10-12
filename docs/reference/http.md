@@ -13,6 +13,8 @@ description: Parameters and responses of createAuditHandler.
 | `targetType` | `targetType` |
 | `from`, `to` | Time range, ISO 8601 |
 | `q` | `search` |
+| `outcome` | `outcome`: `success`, `failure` or `denied` |
+| `correlation` | `correlationId` |
 | `limit` | Page size, at most 500 |
 | `cursor` | Next page |
 | `id` | Return one event instead of a page |

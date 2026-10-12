@@ -39,6 +39,7 @@ const PAIRS: [string, string][] = [
   ["accent", "surface"],
   ["removed", "removed-bg"],
   ["added", "added-bg"],
+  ["warn", "warn-bg"],
 ];
 
 describe.each([

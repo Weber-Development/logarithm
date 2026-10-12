@@ -25,6 +25,16 @@ export interface AuditLogLabels {
   location: string;
   eventId: string;
   tenant: string;
+  outcome: string;
+  allOutcomes: string;
+  outcomeSuccess: string;
+  outcomeFailure: string;
+  outcomeDenied: string;
+  correlation: string;
+  history: string;
+  historyField: string;
+  allFields: string;
+  noHistory: string;
   today: string;
   yesterday: string;
   filters: string;
@@ -63,6 +73,16 @@ export const en: AuditLogLabels = {
   location: "Location",
   eventId: "Event ID",
   tenant: "Organisation",
+  outcome: "Result",
+  allOutcomes: "All results",
+  outcomeSuccess: "Succeeded",
+  outcomeFailure: "Failed",
+  outcomeDenied: "Denied",
+  correlation: "Correlation ID",
+  history: "History",
+  historyField: "Show changes to",
+  allFields: "All fields",
+  noHistory: "No changes have been recorded for this object.",
   today: "Today",
   yesterday: "Yesterday",
   filters: "Filter activity",
@@ -101,6 +121,16 @@ export const de: AuditLogLabels = {
   location: "Ort",
   eventId: "Ereignis-ID",
   tenant: "Organisation",
+  outcome: "Ergebnis",
+  allOutcomes: "Alle Ergebnisse",
+  outcomeSuccess: "Erfolgreich",
+  outcomeFailure: "Fehlgeschlagen",
+  outcomeDenied: "Abgelehnt",
+  correlation: "Korrelations-ID",
+  history: "Verlauf",
+  historyField: "Änderungen anzeigen für",
+  allFields: "Alle Felder",
+  noHistory: "Für dieses Objekt sind keine Änderungen aufgezeichnet.",
   today: "Heute",
   yesterday: "Gestern",
   filters: "Aktivität filtern",
@@ -139,6 +169,16 @@ export const fr: AuditLogLabels = {
   location: "Lieu",
   eventId: "ID d’événement",
   tenant: "Organisation",
+  outcome: "Résultat",
+  allOutcomes: "Tous les résultats",
+  outcomeSuccess: "Réussi",
+  outcomeFailure: "Échoué",
+  outcomeDenied: "Refusé",
+  correlation: "ID de corrélation",
+  history: "Historique",
+  historyField: "Afficher les modifications de",
+  allFields: "Tous les champs",
+  noHistory: "Aucune modification n’a été enregistrée pour cet objet.",
   today: "Aujourd’hui",
   yesterday: "Hier",
   filters: "Filtrer l’activité",
@@ -177,6 +217,16 @@ export const it: AuditLogLabels = {
   location: "Luogo",
   eventId: "ID evento",
   tenant: "Organizzazione",
+  outcome: "Esito",
+  allOutcomes: "Tutti gli esiti",
+  outcomeSuccess: "Riuscito",
+  outcomeFailure: "Non riuscito",
+  outcomeDenied: "Negato",
+  correlation: "ID di correlazione",
+  history: "Cronologia",
+  historyField: "Mostra le modifiche di",
+  allFields: "Tutti i campi",
+  noHistory: "Per questo oggetto non è stata registrata alcuna modifica.",
   today: "Oggi",
   yesterday: "Ieri",
   filters: "Filtra attività",

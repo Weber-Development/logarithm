@@ -30,6 +30,12 @@ export interface AuditContext {
   location?: string;
 }
 
+/** How an action ended: it went through, it failed, or it was refused (permission, policy). */
+export type AuditOutcome = "success" | "failure" | "denied";
+
+/** The outcomes, in the order they are listed in documentation and validation messages. */
+export const AUDIT_OUTCOMES: readonly AuditOutcome[] = ["success", "failure", "denied"];
+
 /** A stored audit event. Events are immutable once recorded. */
 export interface AuditEvent {
   /** Time-sortable unique id (ULID). */
@@ -45,6 +51,13 @@ export interface AuditEvent {
   changes: AuditChange[];
   context: AuditContext;
   metadata: Record<string, unknown>;
+  /**
+   * How the action ended. Events recorded since 2.0 always have one; events from earlier versions
+   * do not, and count as `success` in filters.
+   */
+  outcome?: AuditOutcome;
+  /** Ties together the events of one operation across services, such as a trace or job id. */
+  correlationId?: string;
 }
 
 /** What you pass to `record()`. */
@@ -62,6 +75,9 @@ export interface AuditEventInput {
   tenantId?: string | null;
   /** Defaults to now. */
   occurredAt?: Date | string;
+  /** Defaults to `success`. */
+  outcome?: AuditOutcome;
+  correlationId?: string;
 }
 
 /** Filters for `query()`. All filters are combined with AND. */
@@ -79,6 +95,10 @@ export interface AuditQuery {
   to?: Date | string;
   /** Case-insensitive text search in action, actor and target ids, names and emails. */
   search?: string;
+  /** Only events that ended this way. Events from before 2.0 count as `success`. */
+  outcome?: AuditOutcome;
+  /** Only events with this correlation id. */
+  correlationId?: string;
   /** Page size, 1 to 500. Default 50. */
   limit?: number;
   /** `nextCursor` of the previous page. */
@@ -120,6 +140,9 @@ export interface StoreQuery {
   to?: string;
   /** Lower-cased search text. */
   search?: string;
+  /** Events without an outcome (recorded before 2.0) match `success`. */
+  outcome?: AuditOutcome;
+  correlationId?: string;
   /** Only events older than this position (keyset pagination). */
   before?: { occurredAt: string; id: string };
   /** Number of events to return. */

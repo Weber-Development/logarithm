@@ -47,13 +47,28 @@ export function sqliteSchema(options: { table?: string } = {}): string {
   changes TEXT NOT NULL DEFAULT '[]',
   context TEXT NOT NULL DEFAULT '{}',
   metadata TEXT NOT NULL DEFAULT '{}',
+  outcome TEXT,
+  correlation_id TEXT,
   search TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS ${index("tenant_time")} ON ${table} (tenant_id, occurred_at DESC, id DESC);
 CREATE INDEX IF NOT EXISTS ${index("actor_time")} ON ${table} (actor_id, occurred_at DESC);
 CREATE INDEX IF NOT EXISTS ${index("action")} ON ${table} (action);
+CREATE INDEX IF NOT EXISTS ${index("correlation")} ON ${table} (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE TABLE IF NOT EXISTS ${identifier(`${name}_meta`)} (name TEXT PRIMARY KEY, value TEXT NOT NULL);
 INSERT OR IGNORE INTO ${identifier(`${name}_meta`)} (name, value) VALUES ('schema_version', '${SCHEMA_VERSION}');`;
+}
+
+/**
+ * The statements that bring a table of schema version 1 (Logarithm 0.6 to 1.x) to version 2. Run
+ * them yourself if you keep migrations in your own tool; `migrateSqlite` does it for you. SQLite
+ * has no `ADD COLUMN IF NOT EXISTS`, so run each `ALTER` only once.
+ */
+export function sqliteUpgradeSchema(options: { table?: string } = {}): string {
+  const name = options.table ?? "audit_events";
+  const table = identifier(name);
+  return `ALTER TABLE ${table} ADD COLUMN outcome TEXT;
+ALTER TABLE ${table} ADD COLUMN correlation_id TEXT;`;
 }
 
 /**
@@ -78,11 +93,28 @@ export function sqliteSchemaVersion(options: SqliteStoreOptions): number | null 
  */
 export function migrateSqlite(options: SqliteStoreOptions): void {
   assertSchemaVersion(sqliteSchemaVersion(options));
+  const name = options.table ?? "audit_events";
+  const existing = options.db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
+    .all(name);
+  if (existing.length > 0) {
+    const columns = options.db.prepare(`PRAGMA table_info(${identifier(name)})`).all() as {
+      name: string;
+    }[];
+    for (const column of ["outcome", "correlation_id"]) {
+      if (!columns.some((c) => c.name === column)) {
+        options.db.exec(`ALTER TABLE ${identifier(name)} ADD COLUMN ${column} TEXT`);
+      }
+    }
+  }
   options.db.exec(sqliteSchema(options));
+  options.db
+    .prepare(`UPDATE ${identifier(`${name}_meta`)} SET value = ? WHERE name = 'schema_version'`)
+    .run(String(SCHEMA_VERSION));
 }
 
 const COLUMNS =
-  "id, occurred_at, tenant_id, action, actor_id, actor, targets, changes, context, metadata";
+  "id, occurred_at, tenant_id, action, actor_id, actor, targets, changes, context, metadata, outcome, correlation_id";
 
 const DIALECT: WhereDialect = {
   param: () => "?",
@@ -102,7 +134,7 @@ export function sqliteStore(options: SqliteStoreOptions): AuditStore {
   const { db } = options;
   const table = identifier(options.table ?? "audit_events");
   const insert = db.prepare(
-    `INSERT INTO ${table} (${COLUMNS}, search) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO ${table} (${COLUMNS}, search) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   );
 
   const transaction = <T>(fn: () => T): T => {
@@ -133,6 +165,8 @@ export function sqliteStore(options: SqliteStoreOptions): AuditStore {
             r.changes,
             r.context,
             r.metadata,
+            r.outcome,
+            r.correlation_id,
             r.search,
           );
         }

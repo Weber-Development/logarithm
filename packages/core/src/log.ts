@@ -11,18 +11,19 @@ import {
   toStoreFilter,
   toStoreQuery,
 } from "./query";
-import type {
-  AuditActor,
-  AuditContext,
-  AuditCountQuery,
-  AuditEvent,
-  AuditEventInput,
-  AuditGroupBy,
-  AuditGroupCount,
-  AuditPage,
-  AuditQuery,
-  AuditStore,
-  StoreFilter,
+import {
+  AUDIT_OUTCOMES,
+  type AuditActor,
+  type AuditContext,
+  type AuditCountQuery,
+  type AuditEvent,
+  type AuditEventInput,
+  type AuditGroupBy,
+  type AuditGroupCount,
+  type AuditPage,
+  type AuditQuery,
+  type AuditStore,
+  type StoreFilter,
 } from "./types";
 
 export class AuditValidationError extends Error {
@@ -43,6 +44,8 @@ export interface AuditLogOptions {
 
 export interface AuditDefaults {
   tenantId?: string | null;
+  /** For example the request or trace id, so every event of one operation carries it. */
+  correlationId?: string;
   actor?: AuditActor;
   context?: AuditContext;
   metadata?: Record<string, unknown>;
@@ -205,6 +208,19 @@ export function createAuditLog<A extends Record<keyof A, object> = AnyActions>(
       unknown
     >;
     const occurredAt = toIso(input.occurredAt ?? now(), "occurredAt");
+    const outcome = input.outcome ?? "success";
+    if (!AUDIT_OUTCOMES.includes(outcome)) {
+      throw new AuditValidationError(`outcome must be one of ${AUDIT_OUTCOMES.join(", ")}`);
+    }
+    const correlationId = input.correlationId ?? defaults.correlationId;
+    if (
+      correlationId !== undefined &&
+      (typeof correlationId !== "string" ||
+        correlationId.length === 0 ||
+        correlationId.length > 190)
+    ) {
+      throw new AuditValidationError("correlationId must be a string of 1 to 190 characters");
+    }
     return {
       id: ulid(),
       occurredAt,
@@ -215,6 +231,8 @@ export function createAuditLog<A extends Record<keyof A, object> = AnyActions>(
       changes,
       context: { ...defaults.context, ...input.context },
       metadata,
+      outcome,
+      ...(correlationId !== undefined ? { correlationId } : {}),
     };
   };
 

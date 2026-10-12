@@ -40,6 +40,10 @@ export function parseQueryParams(params: URLSearchParams): AuditQuery {
   if (to) q.to = to;
   const search = params.get("q");
   if (search) q.search = search;
+  const outcome = params.get("outcome");
+  if (outcome) q.outcome = outcome as AuditQuery["outcome"];
+  const correlation = params.get("correlation");
+  if (correlation) q.correlationId = correlation;
   const cursor = params.get("cursor");
   if (cursor) q.cursor = cursor;
   const limit = params.get("limit");
@@ -51,7 +55,7 @@ export function parseQueryParams(params: URLSearchParams): AuditQuery {
  * A request handler for the audit log viewer, based on the Fetch API. Works in Next.js route
  * handlers, Remix, Hono, Bun, Deno and Cloudflare Workers.
  *
- * `GET ?actor=&action=&target=&targetType=&from=&to=&q=&cursor=&limit=` returns a page,
+ * `GET ?actor=&action=&target=&targetType=&from=&to=&q=&outcome=&correlation=&cursor=&limit=` returns a page,
  * `GET ?id=` one event.
  */
 export function createAuditHandler<A extends Record<keyof A, object> = AnyActions>(
