@@ -5,5 +5,7 @@
     "@sweberdev/logarithm": "1.0.0",
     "@sweberdev/logarithm-react": "1.0.0"
   },
-  "changesets": []
+  "changesets": [
+    "two-point-zero-schema"
+  ]
 }
