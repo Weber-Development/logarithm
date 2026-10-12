@@ -106,3 +106,70 @@ const zip = zipFiles(files) // send as application/zip
 The pack contains `events.csv`, `events.ndjson`, `integrity-report.json`, `checkpoints.json`, the retention report, a `README.txt` and `manifest.json`. The manifest lists every file with its size and SHA-256, plus the tenant, period and event count. With `signingKey` it carries an HMAC signature, so a changed manifest is detected too. Add your own files (policies, notes) with `extra`.
 
 `verifyEvidencePack(files, { signingKey })` re-computes all hashes and returns `{ ok, problems, signatureValid }`. An auditor can also check any file with `sha256sum` against the manifest, no software needed.
+
+### Controls mapping (SOC 2, ISO 27001)
+
+`mapControls()` shows which of your controls the log provides evidence for. Each control lists the actions that count as evidence, a minimum number of events, and gets a status: `evidenced`, `below-minimum` or `no-evidence`, with the number of events and a few samples. `SOC2_STARTER` and `ISO27001_STARTER` are starting points to adapt with your auditor; they are not a certification and do not replace one.
+
+```ts
+import { ISO27001_STARTER, SOC2_STARTER, controlReportHtml, mapControls } from "@weber-development/logarithm-export"
+
+const rows = await mapControls(store, [...SOC2_STARTER, ...ISO27001_STARTER], {
+  tenantId: "acme",
+  from: "2026-01-01T00:00:00Z",
+  to: "2026-10-01T00:00:00Z",
+})
+const html = controlReportHtml(rows, { title: "Controls Q1 to Q3 2026" }) // HTML-escaped; controlReportCsv(rows) for a spreadsheet
+```
+
+Pass the result as `controls` to `buildEvidencePack()` and the pack also contains `controls.json`, `controls.csv` and `controls.html`.
+
+## Monthly evidence packs
+
+`runMonthlyEvidence()` builds one pack per tenant for a calendar month (default: the previous one) and hands each ZIP to your `deliver` callback. Pass `integrity`, `checkpoints` and `signingKey` to include them in every pack. Running it twice for a month delivers the same file name twice, so make `deliver` overwrite. A failing tenant is reported and does not stop the others; `skipEmpty` leaves out tenants without events. Call it from a cron job on the first of the month.
+
+```ts
+import { ISO27001_STARTER, SOC2_STARTER, runMonthlyEvidence } from "@weber-development/logarithm-export"
+
+const results = await runMonthlyEvidence({
+  store,
+  tenants: () => listTenantIds(),
+  controls: [...SOC2_STARTER, ...ISO27001_STARTER],
+  skipEmpty: true,
+  deliver: ({ fileName, zip }) => upload(`evidence/${fileName}`, zip),
+})
+```
+
+## Read-only access for auditors
+
+Give an auditor a link instead of an export. `createAuditorAccess()` issues tokens (`lga1.…`) that are limited to one tenant, optionally a period and a set of actions, and expire after at most 90 days (default maximum; at least one minute). The endpoint is GET-only. Every request is written to your audit log first (`auditor.viewed`, `auditor.exported`, and `auditor.denied` for expired or revoked tokens); if that write fails, the request is answered with 503 and no data is returned. Responses are `no-store` and `noindex`.
+
+```ts
+import { createAuditorAccess } from "@weber-development/logarithm-export"
+
+const access = createAuditorAccess({
+  store,
+  key: process.env.AUDITOR_KEY!,
+  record: (entry) => audit.record(entry),
+  baseUrl: "https://app.example.ch/api/auditor",
+})
+const { url, grant } = await access.issue({
+  tenantId: "acme",
+  auditor: "Dana Prüfer (KPMG)",
+  expiresIn: "14d",
+  scope: { from: "2026-01-01", to: "2027-01-01" },
+  issuedBy: { id: user.id },
+})
+export const GET = access.handler
+// later: await access.revoke(grant, { id: user.id }) (needs a `revocations` list)
+```
+
+The auditor opens the link; `?format=csv|ndjson|json` downloads an export, `?id=` shows one event, `?grant=1` shows the access itself. `<AuditLog endpoint="/api/auditor?token=…">` works as the auditor's view.
+
+## Splunk and Datadog
+
+`splunkSink()` and `datadogSink()` send events with their outcome (Datadog sets the log status from it), split large batches (Splunk 500 events by default, Datadog 1000 entries or 4.5 MB) and accept a `fetch` option for proxies or tests. Refused requests throw `SinkHttpError`, so `withRetry()` does not retry permanent 4xx answers. Splunk takes `fields`; Datadog takes `hostname` and `tags`.
+
+## CSV columns in 2.0
+
+The CSV export ends with two new columns, `outcome` and `correlation_id`. Existing columns keep their position. If you parse the CSV by column index, nothing moves; if you check the header line, update it.
