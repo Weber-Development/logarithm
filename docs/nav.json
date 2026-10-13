@@ -30,7 +30,7 @@
     },
     {
       "label": "Logarithm Pro",
-      "items": ["pro/overview", "pro/integrity", "pro/retention", "pro/export", "pro/alerts"]
+      "items": ["pro/overview", "pro/integrity", "pro/retention", "pro/export", "pro/alerts", "pro/server"]
     },
     {
       "label": "Legal",
