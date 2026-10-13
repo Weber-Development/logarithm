@@ -1,6 +1,6 @@
 ---
 title: Logarithm Pro
-description: Tamper evidence, retention and privacy requests, export, forwarding and alerts.
+description: Tamper evidence, retention and privacy requests, export, forwarding, alerts and a ready-to-run admin server.
 ---
 
 The free packages record and show events. Logarithm Pro adds what enterprise customers, auditors and data protection officers ask for next.
@@ -9,9 +9,10 @@ The free packages record and show events. Logarithm Pro adds what enterprise cus
 |---|---|
 | `@weber-development/logarithm-integrity` | [Tamper evidence](integrity.md): every event is linked to the previous one with an HMAC hash chain; a verifier shows which event was changed, removed or reordered |
 | `@weber-development/logarithm-retention` | [Retention and privacy](retention.md): retention periods per customer with archiving, GDPR and Swiss FADP erasure with a stable pseudonym, access-request export |
-| `@weber-development/logarithm-export` | [Export and forwarding](export.md): streamed CSV, NDJSON and JSON downloads for your customers, delivery to signed webhooks, Splunk and Datadog, SOC 2 / ISO 27001 controls mapping, monthly evidence packs and read-only [auditor access](export.md#read-only-access-for-auditors); [alerts](alerts.md) to Slack and Microsoft Teams and anomaly detection for exports, deletions and failed logins |
+| `@weber-development/logarithm-export` | [Export and forwarding](export.md): streamed CSV, NDJSON and JSON downloads for your customers, delivery to signed webhooks, Splunk and Datadog, SOC 2 / ISO 27001 controls mapping, monthly evidence packs and read-only [auditor access](export.md#read-only-access-for-auditors); [alerts](alerts.md) to Slack, Microsoft Teams and e-mail and anomaly detection for exports, deletions, mass changes, failed logins, off-hours changes and new IPs |
+| `@weber-development/logarithm-server` | [Admin server](server.md): a finished admin view with search and export for your customers' admins, event ingest over HTTP and anomaly alerts, as a Docker image or with Node.js |
 
-All three wrap the store you already use, so adding them changes one line:
+The first three wrap the store you already use, so adding them changes one line:
 
 ```ts
 import { withIntegrity } from "@weber-development/logarithm-integrity"

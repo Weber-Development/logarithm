@@ -1,9 +1,9 @@
 ---
 title: Alerts and anomalies
-description: Slack and Microsoft Teams notifications for selected actions, and anomaly detection from a cron job.
+description: Slack, Microsoft Teams and e-mail notifications for selected actions, and anomaly detection for mass deletions, mass changes, off-hours changes and new IPs.
 ---
 
-Both are part of `@weber-development/logarithm-export`.
+Both are part of `@weber-development/logarithm-export`. If you would rather not run any of this yourself, the [admin server](server.md) runs the anomaly check and sends the alerts for you.
 
 ## Notifications
 
@@ -33,6 +33,23 @@ const store = withForwarding(postgresStore({ client: pool }), [
 | `format(event)` | Your own one-line text instead of `Anna Muster: project.deleted project "Website" (p1)` |
 
 Slack gets a message with blocks, Teams an Adaptive Card. Names and other user content are escaped, so an actor called `<!channel>` cannot mention everyone. Webhook URLs are secrets: errors only say `Slack webhook answered 404`, never the URL. Keep the URL in an environment variable.
+
+### E-mail
+
+`emailSink` hands a finished message (recipients, subject, text and HTML, every value escaped) to the mailer you already use:
+
+```ts
+import { emailSink } from "@weber-development/logarithm-export"
+
+emailSink({
+  to: ["security@example.ch"],
+  title: "Acme audit log",
+  actions: ["*.deleted", "member.role_changed"],
+  send: (message) => resend.emails.send({ from: "audit@example.ch", ...message }),
+})
+```
+
+`send` receives `{ to, subject, text, html }`, so it works with Nodemailer, Resend, Postmark or SES. Line breaks in names cannot reach the subject line. The message is covered by tests; delivery is up to your mailer.
 
 To filter any other sink, wrap it: `onlyActions(webhookSink({ url, secret }), ["member.*"])`.
 
@@ -94,6 +111,24 @@ await detectAnomalies({
 ```
 
 `detectAnomalies` returns the anomalies (`rule`, `subject`, `subjectName`, `tenantId`, `count`, `threshold`, `from`, `to`, up to 50 `eventIds`, and the alert `event`), most events first. If the store is wrapped with `withForwarding`, alerts stored with `record` are forwarded as well; then leave `sinks` empty or filter the forwarding sinks with `actions` to avoid duplicates.
+
+### More rules: mass changes, off-hours, new IPs
+
+Three more rule kinds catch what a count of events misses. `EXTENDED_ANOMALY_RULES` has a ready-made rule of each kind; they are not part of the defaults, so existing installations get no new alerts by surprise:
+
+```ts
+import { DEFAULT_ANOMALY_RULES, EXTENDED_ANOMALY_RULES, detectAnomalies } from "@weber-development/logarithm-export"
+
+await detectAnomalies({ store, sinks, record: true, rules: [...DEFAULT_ANOMALY_RULES, ...EXTENDED_ANOMALY_RULES] })
+```
+
+| Rule | What it flags |
+|---|---|
+| `bulk changes` | An actor who touched 50 different objects with `*.updated`, `*.created` or `*.deleted` within the hour. Set `count: "targets"` on your own rule to count distinct objects instead of events, so ten edits of one record do not raise an alarm and a sweep over 200 records does |
+| `off-hours permission changes` | Role, permission or API key changes outside working hours (`outsideHours: { start: 6, end: 20, timeZone: "Europe/Zurich" }`). Hours are 0 to 24, the default time zone is UTC, and weekends count as off-hours unless you set `weekends: false` |
+| `permission changes from a new IP` | The same changes from an IP address the actor has not used before (`newIp: true`, or `{ days: 90 }` to look back that far; default 30 days). An actor with no history is not flagged, so a new account does not alert on its first action |
+
+An anomaly carries `measure` (`events` or `targets`), so the message says "changed 60 different objects" instead of "had 60 events". With `baseline`, these three kinds of rule keep their fixed threshold, and the `newIp` rule reads the actor's history on every run.
 
 ### Learned baselines
 
