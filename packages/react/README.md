@@ -27,3 +27,14 @@ export function Activity() {
 Documentation: [packages.sweber.dev/logarithm/docs/guides/react](https://packages.sweber.dev/logarithm/docs/guides/react)
 
 MIT licensed.
+
+<!-- pro-promo -->
+## Logarithm Pro
+
+Need more than the free package? **Logarithm Pro** adds:
+
+- Integrity: HMAC hash chain per tenant and a verifier that shows which event was changed, removed or reordered
+- Retention: periods per customer, archiving, erasure with a stable pseudonym, access-request export
+- Export: CSV, NDJSON and JSON streams, Splunk and Datadog forwarding, SOC 2 / ISO 27001 evidence packs
+
+Subscriptions from CHF 29 per month, or a one-time lifetime licence. [See what is included](https://packages.sweber.dev/logarithm?utm_source=npm&utm_medium=readme&utm_campaign=pro)
