@@ -8,6 +8,7 @@
       "label": "Guides",
       "items": [
         "guides/recording",
+        "guides/writing-without-javascript",
         "guides/postgres",
         "guides/partitioning",
         "guides/mysql",

@@ -33,6 +33,22 @@ await audit.record({
 - **Safe diffs.** Passwords, tokens, API keys and card numbers are stored as `[redacted]`, also inside nested objects.
 - **Runs anywhere.** The core uses Web APIs only: Node 22+, Bun, Deno, Cloudflare Workers.
 
+## Writing without JavaScript
+
+The audit table is a plain Postgres table, so a service in Python, PHP or Go can insert events with SQL while a Node app reads them with `createAuditLog` and `<AuditLog>`. The layout is **schema version 2** (Logarithm 2.0 and later); its version is stored in `audit_events_meta`.
+
+```python
+conn.execute(
+    """INSERT INTO audit_events (id, occurred_at, tenant_id, action, actor_id, actor, targets, outcome, search)
+       VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s, %s)""",
+    (ulid(ms), occurred_at, "org_42", "document.read", "user_7",
+     '{"id":"user_7","type":"user"}', '[{"id":"doc_9","type":"document"}]', "success",
+     "document.read user_7 document doc_9"),
+)
+```
+
+A direct writer takes over what `record()` does: validate the action, create a ULID, write whole milliseconds, fill `search` and keep secrets out of `changes` and `metadata`. [Writing without JavaScript](https://packages.sweber.dev/logarithm/docs/guides/writing-without-javascript) has the rules and a complete Python example. Check `schema_version` when your service starts, so a future layout change stops it instead of writing rows in the old layout.
+
 ## Logarithm Pro
 
 Tamper evidence with an HMAC hash chain, retention periods with archiving, GDPR/FADP erasure and access requests, CSV export, forwarding to Splunk, Datadog or signed webhooks, Slack and Microsoft Teams alerts, and anomaly detection for exports, deletions and failed logins. See [packages.sweber.dev/logarithm](https://packages.sweber.dev/logarithm).
